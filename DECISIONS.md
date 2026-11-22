@@ -8,5 +8,18 @@
 - Each skill has its own ordered units. Practice unlocks the checkpoint. A failed checkpoint requires correct review responses on the missed points. B1 completion records B2 as the next study band.
 - Limit fuzzy translation grading to one internal edit in one long word. Unlisted paraphrases can be rejected and a spelling tolerance can occasionally change meaning. Faculty can add accepted variants.
 - Vocabulary exercises encountered during learning enter a per-student SM-2-style queue. Binary correctness drives ease and intervals. Due times use elapsed days.
-- Teacher editing uses a validated JSON form so the student maintainer can inspect all five formats. Weak-point counts increase on errors and decrease on successful retrieval.
+- Teacher editing uses labeled fields with syllabus-derived unit and level tags to prevent inconsistent combinations. Weak-point counts increase on errors and decrease on successful retrieval.
 - The PWA caches only its public shell. Sign-in, questions and progress require the LAN server. Malayalam and English appear side by side, with independent direction on Arabic stimuli and inputs.
+- Three to five items per skill checkpoint keep the pilot runnable. A three-item checkpoint requires three correct answers to reach 80%. Small banks cause overlap between placement, practice and checkpoint.
+- Store six CEFR bands as language-independent values. Placement only estimates the three taught bands. B2 marks completion of the supported path, without certifying B2 proficiency.
+- Use two nominal/verbal foundation units at A1, relationships and actions at A2, then complex clauses and purpose at B1. This is a compact pilot sequence, with partial A2 marks and mostly unvowelled B1 text.
+- Show worked examples from a teacher-editable lesson field. Draft question data and answer keys stay off student endpoints. Vowels are required in an exercise specifically assessing a vowel.
+- A teacher edit or withdrawal invalidates an open item's revision. The learner can restart the affected activity while keeping completed placement responses and completed units.
+- Use Asia/Kolkata calendar days for streaks. A sign-out invalidates the session on the server, while re-entry resumes the activity.
+- Local Chromium launch was blocked by the runner's Unix socket restrictions. Automated HTTP tests cover the student workflow; visual layout and installation on the college tablets still need device verification.
+- No live model API credentials were supplied. The draft generator validates the complete batch before committing it. Faculty must review generated language and grading alternatives.
+- The build uses English and Malayalam together, including Malayalam instructions on each seeded item. Teacher authoring field labels are principally English.
+- The pilot uses a single server process and fully reads the modest question bank during a request. Benchmark and index per-activity queries before a large rollout.
+## Future
+- College SSO, independently calibrated placement items, larger teacher-reviewed banks and additional languages.
+- A one-command localhost demo creates temporary accounts and an approved, disposable database for review. Persistent deployments still start entirely in draft.

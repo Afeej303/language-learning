@@ -1,1 +1,18 @@
-{"name":"dhic-arabic-studio","version":"1.0.0","private":true,"type":"module","engines":{"node":">=24.0.0"},"scripts":{"start":"node server.js","test":"node --test","seed":"node scripts/seed.js","account":"node scripts/account.js","dev:approve":"node scripts/approve.js","draft":"node --env-file-if-exists=.env scripts/draft.js"}}
+{
+  "name": "dhic-arabic-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "seed": "node scripts/seed.js",
+    "account": "node scripts/account.js",
+    "dev:approve": "node scripts/approve.js",
+    "draft": "node --env-file-if-exists=.env scripts/draft.js",
+    "demo": "node scripts/demo.js"
+  }
+}
