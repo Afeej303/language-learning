@@ -25,11 +25,12 @@ export async function teacher(main, syllabus) {
   importButton.onclick=async()=>{ try { if(!upload.files[0]) throw Error('Choose a CSV file.'); const result=await api('teacher/questions/import',{csv:await upload.files[0].text()}); const errors=result.rows.filter(r=>!r.ok).map(r=>'Row '+r.row+': '+r.error); notice('Imported '+result.imported+' draft questions.'+(errors.length?' '+errors.join(' | '):'')); await teacher(main,syllabus); } catch(e){notice(e.message)} };
   tools.append(upload,importButton);
   const form = el('form');
-  const picker = dropdown([['', 'Create a question'], ...bank.map(q => [q.id, q.status + ' · ' + q.level + ' · ' + q.skill + ' · ' + q.body.cue])]);
+  const questionLabel = q => `${q.status} · ${q.level} · ${q.skill} · ${q.body.cue}${q.approved_by_name ? ` · approved by ${q.approved_by_name} (${new Date(q.approved_at).toLocaleString()})` : ''}`;
+  const picker = dropdown([['', 'Create a question'], ...bank.map(q => [q.id, questionLabel(q)])]);
   const point = dropdown(syllabus.map(p => [p.point, p.level + ' / ' + p.unit + ' / ' + p.title]));
   const skill = choices(['reading', 'grammar', 'vocabulary', 'translation']);
   const type = choices(['choice', 'blank', 'reorder', 'match', 'translation']);
-  const status = choices(['draft', 'approved']);
+  const status = dropdown([['draft','draft'],['in_review','in review'],['approved','approved']]);
   const difficulty = Object.assign(el('input'), {
     type: 'number',
     min: 1,
@@ -68,7 +69,9 @@ export async function teacher(main, syllabus) {
   picker.onchange = populate;
   type.onchange = format;
   populate();
-  form.append(field('Select question · ചോദ്യം', picker), field('Syllabus point', point), field('Skill', skill), field('Format', type), field('Difficulty · 1 to 5', difficulty), field('English instruction', prompt), field('Malayalam instruction', ml), field('Text to present', cue), optionField, pairsField, answerField, field('Explanation in English (optional)', explanation), field('Explanation in Malayalam (optional)', explanationMl), field('Publication status', status), el('button', 'Save question'));
+  const statusFilter = dropdown([['all','All statuses'],['draft','Draft'],['in_review','In review'],['approved','Approved']]);
+  statusFilter.onchange = () => { picker.replaceChildren(Object.assign(el('option','Create a question'),{value:''}), ...bank.filter(q=>statusFilter.value==='all'||q.status===statusFilter.value).map(q=>Object.assign(el('option',questionLabel(q)),{value:q.id}))); picker.value=''; populate(); };
+  form.append(field('Filter question status', statusFilter), field('Select question · ചോദ്യം', picker), field('Syllabus point', point), field('Skill', skill), field('Format', type), field('Difficulty · 1 to 5', difficulty), field('English instruction', prompt), field('Malayalam instruction', ml), field('Text to present', cue), optionField, pairsField, answerField, field('Explanation in English (optional)', explanation), field('Explanation in Malayalam (optional)', explanationMl), field('Publication status', status), el('button', 'Save question'));
   form.onsubmit = async event => {
     event.preventDefault();
     try {
@@ -145,12 +148,13 @@ export async function teacher(main, syllabus) {
     const levels = student.lanes ? Object.entries(student.lanes).map(([skill, lane]) => `${skill}: ${lane.level}`).join(' · ') : 'Placement in progress';
     card.append(el('p', 'Levels · ' + levels));
     card.append(el('p', 'Last activity · ' + (student.lastActivity ? new Date(student.lastActivity).toLocaleString() : 'No answers yet')));
-    const grammarStats = Object.entries(student.performance || {}).filter(([point]) => syllabus.some(p => p.point === point && p.unit && p.title));
+    const performance = student.performance || {};
     const grammar = el('p');
-    grammar.append(document.createTextNode('Grammar point accuracy · '));
-    grammar.append(document.createTextNode(grammarStats.length ? grammarStats.map(([point, stat]) => `${point}: ${Math.round(stat.correct / stat.total * 100)}% (${stat.correct}/${stat.total})`).join(' · ') : 'No grammar answers yet'));
+    grammar.append(document.createTextNode('Accuracy by skill and point · '));
+    const statsBySkill = Object.entries(performance).flatMap(([skill, points]) => Object.entries(points).map(([point, stat]) => `${skill} / ${point}: ${Math.round(stat.correct / stat.total * 100)}% (${stat.correct}/${stat.total})`));
+    grammar.append(document.createTextNode(statsBySkill.length ? statsBySkill.join(' · ') : 'No answers yet'));
     card.append(grammar);
-    for (const [point, stat] of grammarStats) {
+    for (const [point, stat] of Object.entries(performance.grammar || {})) {
       const row = grammarRows.find(x => x.point === point) || { point, total: 0, correct: 0 };
       row.total += stat.total;
       row.correct += stat.correct;

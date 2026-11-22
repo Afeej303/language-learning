@@ -23,6 +23,7 @@ test('shared lab workflow through the HTTP API', async t => {
   cli('seed');
   cli('account', 'learner');
   cli('account', 'tutor', 'teacher');
+  cli('account', 'tutor2', 'teacher');
   const child = spawn(process.execPath, ['server.js'], {
     env
   });
@@ -59,8 +60,10 @@ test('shared lab workflow through the HTTP API', async t => {
     name: 'tutor',
     password: 'test-password'
   })).cookie;
+  const teacher2 = (await api('login', { name: 'tutor2', password: 'test-password' })).cookie;
   const s = (path, b) => api(path, b, student),
-    admin = (path, b) => api('teacher/' + path, b, teacher);
+    admin = (path, b) => api('teacher/' + path, b, teacher),
+    admin2 = (path, b) => api('teacher/' + path, b, teacher2);
   assert.equal((await s('teacher/questions')).status, 403);
   assert.equal((await s('begin', {
     mode: 'placement'
@@ -68,11 +71,29 @@ test('shared lab workflow through the HTTP API', async t => {
   const drafts = (await admin('questions')).data;
   assert.equal(drafts.length, 480);
   assert.ok(drafts.every(q => q.status === 'draft'));
+  const created = await admin('questions', { ...drafts[0], id: undefined, status: 'in_review' });
+  assert.equal(created.status,200);
+  const inReview = (await admin('questions')).data.find(q => q.id === created.data.id);
+  assert.equal(inReview.created_by,2);
+  assert.equal((await admin('questions',{...inReview,status:'approved'})).status,400,'author cannot approve own item');
+  assert.equal((await admin2('questions',{...inReview,status:'approved'})).status,200,'second teacher can approve');
+  const approved = (await admin2('questions')).data.find(q => q.id === created.data.id);
+  assert.equal(approved.status,'approved');
+  assert.equal(approved.approved_by,3);
+  assert.equal((await admin2('questions',{...approved,status:'approved',body:{...approved.body,prompt:'Edited'}})).status,200);
+  const edited = (await admin2('questions')).data.find(q => q.id === created.data.id);
+  assert.equal(edited.status,'in_review','editing approved item sends it back to review');
   cli('approve');
   let bank = (await admin('questions')).data;
   let state = (await s('begin', {
     mode: 'placement'
   })).data;
+  const resumed=(await s('state')).data;
+  assert.equal(resumed.run.q.id,state.run.q.id);
+  assert.equal(resumed.run.current,1);
+  const blocked=(await s('begin',{mode:'vocab'}));
+  assert.equal(blocked.status,400);
+  assert.match(blocked.data.error,/Finish or resume your open activity first/);
   let first = bank.find(q => q.id === state.run.q.id);
   await admin('questions', {
     ...first,
@@ -102,6 +123,10 @@ test('shared lab workflow through the HTTP API', async t => {
     });
     assert.equal(response.status, 200, JSON.stringify(response.data));
     state = response.data;
+    if (!correct) {
+      assert.ok(state.feedback.explanation.en);
+      assert.ok(state.feedback.explanation.ml);
+    }
     assert.equal((await s('answer', {
       input,
       token
@@ -113,11 +138,20 @@ test('shared lab workflow through the HTTP API', async t => {
   assert.equal(attempts.length, 20);
   assert.ok(attempts.every(a => a.user > 0 && a.question_id && a.raw_answer === 'incorrect' && a.correct === 0 && a.mode === 'placement' && a.skill && a.point && !Number.isNaN(Date.parse(a.attempted_at))));
   audit.close();
+  const repeat = bank.find(q => q.body.type === 'blank');
+  const evidence = new DatabaseSync(env.DB_FILE);
+  const learnerId=evidence.prepare("SELECT id FROM users WHERE name='learner'").get().id;
+  const saveWrong=evidence.prepare('INSERT INTO attempts(user,question_id,raw_answer,correct,mode,skill,point,attempted_at) VALUES(?,?,?,0,?,?,?,?)');
+  for(let i=0;i<4;i++) saveWrong.run(learnerId,repeat.id,'three-times','practice',repeat.skill,repeat.point,new Date().toISOString());
+  for(let j=0;j<55;j++) for(let i=0;i<3;i++) saveWrong.run(learnerId,repeat.id,'other-'+j,'practice',repeat.skill,repeat.point,new Date().toISOString());
+  evidence.close();
   const errors = (await admin('wrong-answers')).data;
-  assert.ok(errors.some(row => row.raw_answer === 'incorrect' && row.count > 0));
-  const candidate = errors.find(row => row.raw_answer === 'incorrect');
+  assert.ok(errors.every(row => row.count >= 3));
+  assert.equal(errors.length,50);
+  assert.ok(errors.every(row => !['choice','match'].includes(bank.find(q=>q.id===row.question_id)?.body.type)));
+  const candidate = errors.find(row => row.raw_answer === 'three-times');
   assert.equal((await admin('wrong-answers/accept', { question_id: candidate.question_id, answer: candidate.raw_answer })).status, 200);
-  assert.ok((await admin('questions')).data.find(q => q.id === candidate.question_id).body.answers.includes('incorrect'));
+  assert.ok((await admin('questions')).data.find(q => q.id === candidate.question_id).body.answers.includes('three-times'));
   const currentBank = (await admin('questions')).data;
   assert.ok(currentBank.some(q => q.status === 'approved' && q.skill === 'reading' && q.unit === 'script' && q.point === 'letters'));
   assert.ok(currentBank.some(q => q.status === 'approved' && q.skill === 'reading' && q.unit === 'script' && q.point === 'words'));
@@ -134,6 +168,8 @@ test('shared lab workflow through the HTTP API', async t => {
   assert.equal(state.lanes.reading.level, 'A2');
   assert.equal(state.lanes.grammar.level, 'A1');
   assert.equal((await admin('students')).data[0].lanes.reading.level, 'A2');
+  const learnerReport=(await admin('students')).data[0];
+  assert.ok(['reading','grammar','vocabulary','translation'].every(skill=>Object.keys(learnerReport.performance[skill]||{}).length>0));
   assert.equal((await s('logout', {})).status, 200);
   assert.equal((await s('state')).status, 401);
 });

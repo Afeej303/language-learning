@@ -124,17 +124,71 @@ input:not([type=radio]),select,textarea {
   margin-top:.35rem}
 textarea {
   font: .9rem/1.4 monospace}
-.choice {
-  border:1px solid #c4c9ba;
-  border-radius:5px;
-  padding:.7rem;
+.choice-grid {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:.5rem;
+  margin:.75rem 0}
+.choice-grid--sentences {
+  grid-template-columns:minmax(0,1fr)}
+@media(min-width:650px) {
+  .choice-grid:not(.choice-grid--sentences) {
+    grid-template-columns:repeat(2,minmax(9rem,1fr))}
+  .choice-grid--arabic:not(.choice-grid--sentences) {
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr))}
+}
+.choice-tile {
+  position:relative;
   display:flex;
   align-items:center;
-  gap:.8rem;
+  gap:.55rem;
+  min-width:0;
+  min-height:44px;
+  margin:0;
+  padding:.4rem .55rem;
+  border:1px solid #c4c9ba;
+  border-radius:5px;
+  background:#fffefa;
   cursor:pointer}
-.choice:has(:checked) {
+.choice-tile:has(.choice-radio:checked) {
   background:#e7f0e7;
-  border-color:#1c5144}
+  border:2px solid #1c5144;
+  padding:calc(.4rem - 1px) calc(.55rem - 1px)}
+.choice-tile:has(.choice-radio:focus-visible) {
+  outline:3px solid #bd8c30;
+  outline-offset:2px}
+.choice-radio {
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0}
+.choice-number {
+  display:grid;
+  flex:0 0 1.5rem;
+  place-items:center;
+  width:1.5rem;
+  height:1.5rem;
+  border-radius:50%;
+  background:#f0eee4;
+  color:#52635b;
+  font-size:.78rem;
+  font-weight:700}
+.choice-tile:has(.choice-radio:checked) .choice-number {
+  color:#fff;
+  background:#1c5144}
+.choice-tile .arabic {
+  font-size:1.45rem;
+  line-height:1.35;
+  direction:rtl}
+.choice-grid--sentences .choice-tile,
+.choice-grid--sentences .choice-tile .arabic {
+  font-size:1rem;
+  line-height:1.4}
 .arabic,blockquote,.assembled {
   font-family:"Noto Naskh Arabic",Georgia,serif;
   font-size:1.55rem;

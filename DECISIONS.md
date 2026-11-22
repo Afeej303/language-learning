@@ -30,3 +30,12 @@
 - Seed banks provide at least twelve distinct Arabic example sentences for each grammar point. A practice set records its question IDs, and checkpoints exclude practiced and previously checkpointed IDs so those assessment items stay disjoint.
 - Persist every submitted answer in an append-only attempts table with the learner, item, raw response, correctness, activity context and UTC timestamp so teacher misconception reports can be derived without parsing mutable learner state.
 - Normalize common Arabic and Urdu spelling variants symmetrically for grading, including legacy Malayalam chillu spellings to their atomic Unicode characters.
+- A question's creator is recorded on teacher or CSV creation. Only another teacher may approve it; every content edit to an approved item returns it to in-review and clears prior approval metadata.
+- CSV exports carry IDs and statuses with a UTF-8 BOM. Imports update matching IDs and create other rows as new draft items, preserving moderation for new content.
+- Wrong-answer reports show typed responses seen at least three times and cap the list at fifty rows to keep review actionable.
+- When a question has no authored feedback, wrong answers use the paired English and Malayalam lesson text for that syllabus point.
+- Teacher accuracy reports derive from immutable attempt records for every skill and point; class weakest-topic ranking remains limited to grammar points.
+- Choice items keep their full option bank for authors. At serve time one accepted answer and up to four distractors are selected, so learners see at most five options without changing stored content.
+- Learner sign-in and reload always land on the home screen. Open activity is resumed explicitly; leaving to home retains the server-side run, and a different run is blocked until that activity is resumed or completed.
+- Choice answers use compact responsive tiles: one column on narrow phones, two columns on medium screens, and auto-fit Arabic tiles with a nine-rem minimum. Longer English choices use one column.
+- When a checkpoint has consumed all questions kept disjoint from practice, recycle the least recently served approved question for each point. A small bank may have no disjoint checkpoint item after practice; in that case its approved pool is recycled rather than presenting a false approval warning.

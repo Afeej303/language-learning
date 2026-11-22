@@ -112,7 +112,7 @@ const server = http.createServer(async (req, res) => {
       if (user.role !== 'teacher') return json(res, 403, {
         error: 'Teacher access required.'
       });
-      if (path === '/api/teacher/questions' && !post) return json(res, 200, bank(false));
+      if (path === '/api/teacher/questions' && !post) return json(res, 200, bank(false).map(q => ({ ...q, approved_by_name: q.approved_by ? db.prepare('SELECT name FROM users WHERE id=?').get(q.approved_by)?.name || 'Unknown teacher' : null })));
       if (path === '/api/teacher/questions/export' && !post) {
         res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="question-bank.csv"', 'Cache-Control': 'no-store' });
         return res.end(exportCsv());
@@ -123,15 +123,18 @@ const server = http.createServer(async (req, res) => {
       }
       if (path === '/api/teacher/questions/import' && post) {
         if (typeof b.csv !== 'string') throw Error('Provide CSV text.');
-        const results = atomic(() => importCsv(b.csv));
+        const results = atomic(() => importCsv(b.csv, user.id));
         return json(res, 200, { imported: results.filter(x => x.ok).length, rows: results });
       }
       if (path === '/api/teacher/wrong-answers' && !post) {
         const rows = db.prepare(`SELECT question_id, point, raw_answer, count(*) AS count
           FROM attempts WHERE correct=0 AND raw_answer <> ''
-          GROUP BY question_id, raw_answer ORDER BY count DESC, question_id`).all();
+          GROUP BY question_id, raw_answer HAVING count(*) >= 3 ORDER BY count DESC, question_id`).all();
         const questions = new Map(bank(false).map(q => [q.id, q]));
-        return json(res, 200, rows.filter(x => questions.has(x.question_id)).map(x => ({ ...x, cue: questions.get(x.question_id).body.cue, skill: questions.get(x.question_id).skill })));
+        return json(res, 200, rows.filter(x => {
+          const q = questions.get(x.question_id);
+          return q && !['choice','match'].includes(q.body.type);
+        }).slice(0,50).map(x => ({ ...x, cue: questions.get(x.question_id).body.cue, skill: questions.get(x.question_id).skill })));
       }
       if (path === '/api/teacher/wrong-answers/accept' && post) {
         if (typeof b.question_id !== 'string' || typeof b.answer !== 'string' || !b.answer.trim() || b.answer.length > 2000) throw Error('Choose a valid answer to accept.');
@@ -146,24 +149,36 @@ const server = http.createServer(async (req, res) => {
         return json(res, 200, { ok: true });
       }
       if (path === '/api/teacher/questions' && post) {
+        let savedId;
         atomic(() => {
           const id = b.id || randomUUID();
-          if (b.id && !db.prepare('SELECT id FROM questions WHERE id=?').get(id)) throw Error('Unknown question.');
-          const previous = b.id ? db.prepare('SELECT status,approved_by,approved_at FROM questions WHERE id=?').get(id) : null;
-          const status = b.status === 'approved' ? (previous?.status === 'in_review' ? 'approved' : previous?.status === 'approved' ? 'approved' : 'in_review') : b.status;
-          save({ ...b, id, status, approved_by: status === 'approved' ? (previous?.approved_by || user.id) : null, approved_at: status === 'approved' ? (previous?.approved_at || new Date().toISOString()) : null });
+          savedId = id;
+          const previous = b.id ? db.prepare('SELECT status,approved_by,approved_at,created_by FROM questions WHERE id=?').get(id) : null;
+          if (b.id && !previous) throw Error('Unknown question.');
+          let status = b.status;
+          if (!['draft','in_review','approved'].includes(status)) throw Error('Choose draft, in review, or approved.');
+          if (previous?.status === 'approved') status = 'in_review';
+          if (status === 'approved') {
+            const creator = previous?.created_by ?? (previous ? null : user.id);
+            if (creator != null && creator === user.id) throw Error('A different teacher must approve this question.');
+            if (previous && previous.status !== 'in_review') throw Error('Move the question to in review before approving it.');
+          }
+          save({ ...b, id, created_by: previous?.created_by ?? user.id, status, approved_by: status === 'approved' ? user.id : null, approved_at: status === 'approved' ? new Date().toISOString() : null });
         });
-        return json(res, 200, {});
+        return json(res, 200, { id: savedId });
       }
       if (path === '/api/teacher/students' && !post) return json(res, 200, db.prepare("SELECT id,name FROM users WHERE role='student' ORDER BY name").all().map(u => {
         const s = load(u.id);
+        const attempts = db.prepare('SELECT skill,point,COUNT(*) AS total,SUM(correct) AS correct,MAX(attempted_at) AS last FROM attempts WHERE user=? GROUP BY skill,point').all(u.id);
+        const performance = {};
+        for (const row of attempts) (performance[row.skill] ||= {})[row.point] = { total: row.total, correct: row.correct };
         return {
           name: u.name,
           lanes: s.lanes,
           weak: s.weak,
           count: s.placement.seen.length,
-          performance: s.performance || {},
-          lastActivity: s.lastActivity || null
+          performance,
+          lastActivity: db.prepare('SELECT MAX(attempted_at) AS last FROM attempts WHERE user=?').get(u.id).last || null
         };
       }));
     } else if (user.role === 'student' && ['/api/state', '/api/begin', '/api/answer'].includes(path)) {
@@ -171,7 +186,7 @@ const server = http.createServer(async (req, res) => {
         const s = load(user.id),
           rows = bank();
         let feedback;
-        if (path === '/api/begin' && post) begin(s, b.mode, b.skill, rows);else if (path === '/api/answer' && post) feedback = answer(s, b.input, b.token, rows, user.id);else if (path !== '/api/state' || post) throw Error('Invalid request.');
+      if (path === '/api/begin' && post) begin(s, b.mode, b.skill, rows);else if (path === '/api/answer' && post) feedback = answer(s, b.input, b.token, rows, user.id);else if (path !== '/api/state' || post) throw Error('Invalid request.');
         persist(user.id, s);
         return {
           ...view(s, rows),

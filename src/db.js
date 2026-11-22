@@ -9,7 +9,7 @@ export const db = new DatabaseSync(file);
 db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
 CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY,name TEXT UNIQUE NOT NULL,hash TEXT NOT NULL,role TEXT CHECK(role IN ('student','teacher')) NOT NULL);
 CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user INTEGER REFERENCES users,expires INTEGER NOT NULL);
-CREATE TABLE IF NOT EXISTS questions(id TEXT PRIMARY KEY, language TEXT NOT NULL, skill TEXT NOT NULL,level TEXT NOT NULL,unit TEXT NOT NULL,point TEXT NOT NULL,difficulty INTEGER NOT NULL,status TEXT CHECK(status IN ('draft','in_review','approved')) NOT NULL,body TEXT NOT NULL, approved_by INTEGER REFERENCES users, approved_at TEXT);
+CREATE TABLE IF NOT EXISTS questions(id TEXT PRIMARY KEY, language TEXT NOT NULL, skill TEXT NOT NULL,level TEXT NOT NULL,unit TEXT NOT NULL,point TEXT NOT NULL,difficulty INTEGER NOT NULL,status TEXT CHECK(status IN ('draft','in_review','approved')) NOT NULL,body TEXT NOT NULL, approved_by INTEGER REFERENCES users, approved_at TEXT, created_by INTEGER REFERENCES users);
 CREATE INDEX IF NOT EXISTS bank ON questions(language,status,skill,level);
 CREATE TABLE IF NOT EXISTS learners(user INTEGER REFERENCES users,language TEXT,state TEXT NOT NULL,PRIMARY KEY(user,language));`);
 db.exec(`CREATE TABLE IF NOT EXISTS attempts (
@@ -24,9 +24,15 @@ db.exec(`CREATE TABLE IF NOT EXISTS attempts (
   attempted_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS attempts_wrong_by_question ON attempts(question_id, correct, attempted_at);`);
-for (const [name, type] of [['approved_by','INTEGER REFERENCES users'],['approved_at','TEXT']]) {
+for (const [name, type] of [['approved_by','INTEGER REFERENCES users'],['approved_at','TEXT'],['created_by','INTEGER REFERENCES users']]) {
   try { db.exec(`ALTER TABLE questions ADD COLUMN ${name} ${type}`); } catch (e) { if (!String(e.message).includes('duplicate column')) throw e; }
 }
+db.exec(`CREATE TRIGGER IF NOT EXISTS questions_no_self_approval_insert BEFORE INSERT ON questions
+  WHEN NEW.approved_by IS NOT NULL AND NEW.created_by IS NOT NULL AND NEW.approved_by=NEW.created_by
+  BEGIN SELECT RAISE(ABORT,'Question author cannot approve their own question.'); END;
+CREATE TRIGGER IF NOT EXISTS questions_no_self_approval_update BEFORE UPDATE ON questions
+  WHEN NEW.approved_by IS NOT NULL AND NEW.created_by IS NOT NULL AND NEW.approved_by=NEW.created_by
+  BEGIN SELECT RAISE(ABORT,'Question author cannot approve their own question.'); END;`);
 export function atomic(fn) {
   db.exec('BEGIN IMMEDIATE');
   try {

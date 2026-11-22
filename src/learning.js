@@ -41,14 +41,15 @@ export function view(s, bank) {
       mode: run.mode,
       skill: run.skill,
       done: run.results.length,
-      total: run.ids.length + run.results.length,
+      current: run.mode === 'placement' ? s.placement.seen.length + 1 : run.results.length + 1,
+      total: run.total || run.ids.length + run.results.length,
       token: run.token,
       q: q && visible(q)
     }
   };
 }
 export function begin(s, mode, skill, bank) {
-  if (s.run && active(s.run, bank)) throw Error('An activity is already open.');
+  if (s.run && (active(s.run, bank) || s.run.mode !== mode || s.run.skill !== skill)) throw Error('Finish or resume your open activity first.');
   let questions;
   if (mode === 'placement' && !s.lanes) {
     if (skills.some(skill => bank.filter(q => q.skill === skill).length < 7)) throw Error('Placement needs seven approved items per skill. Ask your teacher to publish the bank.');
@@ -59,6 +60,7 @@ export function begin(s, mode, skill, bank) {
   s.run = {
     mode,
     skill,
+    total: mode === 'placement' ? 28 : questions.length,
     versions: Object.fromEntries(questions.map(q => [q.id, revision(q)])),
     ids: questions.map(q => q.id),
     token: randomUUID(),
@@ -118,9 +120,10 @@ export function answer(s, input, token, bank, userId) {
     } : finishUnit(s.lanes[r.skill], r.mode, r.results);
     s.run = null;
   }
+  const lesson = syllabus.find(p => p.point === q.point);
   return {
     ok,
     solution: q.body.type === 'match' ? q.body.pairs.map(x => x.join(' → ')).join(' · ') : q.body.answers[0],
-    explanation: ok ? undefined : { en: q.body.explanation || '', ml: q.body.explanationMl || '' }
+    explanation: ok ? undefined : { en: q.body.explanation || lesson?.lesson || '', ml: q.body.explanationMl || lesson?.lessonMl || '' }
   };
 }

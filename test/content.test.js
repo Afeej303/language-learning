@@ -31,3 +31,13 @@ test('student projection strips solutions and separates matching columns', () =>
     }
   }));
 });
+
+test('served choice options include one correct choice and at most four random distractors', () => {
+  const q={language:'ar',skill:'reading',level:'A1',unit:'script',point:'letters',difficulty:1,status:'approved',body:{type:'choice',prompt:'Choose',ml:'اختر',cue:'cue',answers:['correct'],options:['correct','wrong1','wrong2','wrong3','wrong4','wrong5','wrong6']}};
+  for(let i=0;i<20;i++) {
+    const shown=visible(q);
+    assert.ok(shown.options.length<=5);
+    assert.ok(shown.options.includes('correct'));
+  }
+  assert.equal(q.body.options.length,7,'question-bank options remain unmodified');
+});

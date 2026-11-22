@@ -63,18 +63,26 @@ async function boot() {
   }, 'quiet'));
   if (me.user.role === 'teacher') return teacher(main, syllabus);
   state = await api('state');
-  draw();
+  learner();
 }
 async function start(mode, skill) {
-  state = await api('begin', {
-    mode,
-    skill
-  });
-  notice('');
-  draw();
+  try {
+    state = await api('begin', { mode, skill });
+    notice('');
+    activity();
+  } catch (e) {
+    notice(e.message);
+  }
 }
 function learner() {
   const content = [hero('Your learning path', 'പഠനപാത · ' + state.streak + ' day streak')];
+  if (state.run) {
+    const r=state.run;
+    const activityName=r.mode==='placement'?'placement':`${r.mode}${r.skill ? ' · '+r.skill : ''}`;
+    const resume=section('Open activity','തുടരാനുള്ള പ്രവർത്തനം');
+    resume.append(el('p',`You have an unfinished ${activityName} · question ${r.current} of ${r.mode==='placement'?'up to ':''}${r.total}.`),button(`Resume ${activityName} · question ${r.current} of ${r.total}`,activity));
+    content.push(resume);
+  }
   if (state.last) {
     const r = state.last;
     content.push(el('p', r.mode === 'placement' ? 'Placement complete · Your four skill levels are ready.' : r.mode + ' complete · ' + Math.round(r.score * 100) + '%' + (r.misses?.length ? ' · Review: ' + r.misses.join(', ') : ''), 'result'));
@@ -127,12 +135,15 @@ function activity() {
     q = r.q;
   if (!q) {
     const s = section('Question withdrawn', 'ചോദ്യം പിൻവലിച്ചു');
-    s.append(button('Refresh activity', () => start(r.mode, r.skill)));
+    s.append(button('Exit to home', learner, 'quiet'), button('Refresh activity', () => start(r.mode, r.skill)));
     return main.replaceChildren(s);
   }
   const title = r.mode === 'placement' ? 'Placement test' : r.mode[0].toUpperCase() + r.mode.slice(1);
   const s = section(q.prompt, q.ml),
     bar = el('progress');
+  const exit=button('Exit to home',learner,'quiet');
+  exit.type='button';
+  s.append(exit);
   bar.value = r.mode === 'placement' ? state.count : r.done;
   bar.max = r.mode === 'placement' ? 28 : r.total;
   bar.setAttribute('aria-label', 'Activity progress');
@@ -141,16 +152,37 @@ function activity() {
   const form = el('form');
   let read;
   if (q.type === 'choice') {
-    for (const opt of q.options) {
-      const label = el('label', undefined, 'choice'),
-        input = el('input');
+    const options = q.options || [];
+    const longEnglish = options.some(opt => /[A-Za-z]{2,}/u.test(opt) && opt.trim().length >= 34);
+    const shortArabic = options.length > 0 && options.every(opt => /\p{Script=Arabic}/u.test(opt) && opt.trim().length <= 20);
+    const grid = el('div', undefined, `choice-grid${longEnglish ? ' choice-grid--sentences' : ''}${shortArabic ? ' choice-grid--arabic' : ''}`);
+    grid.setAttribute('role', 'radiogroup');
+    grid.setAttribute('aria-label', q.prompt);
+    options.forEach((opt, index) => {
+      const label = el('label', undefined, 'choice-tile'),
+        input = el('input'),
+        marker = el('span', String(index + 1), 'choice-number');
       input.type = 'radio';
+      input.className = 'choice-radio';
       input.name = 'choice';
       input.required = true;
       input.value = opt;
-      label.append(input, bidi(opt));
-      form.append(label);
-    }
+      input.setAttribute('aria-label', `${index + 1}: ${opt}`);
+      label.append(input, marker, bidi(opt, 'span'));
+      grid.append(label);
+    });
+    form.append(grid);
+    form.addEventListener('keydown', event => {
+      if (!/^[1-5]$/.test(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
+      const field = event.target;
+      if (field instanceof HTMLInputElement && field.type !== 'radio' || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) return;
+      const radio = grid.querySelectorAll('input[type="radio"]')[Number(event.key) - 1];
+      if (!radio) return;
+      event.preventDefault();
+      radio.checked = true;
+      radio.focus();
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     read = () => form.querySelector(':checked').value;
   } else if (q.type === 'match') {
     const selects = q.left.map(left => {
@@ -220,7 +252,7 @@ function activity() {
       if (!f.ok && f.solution) box.append(el('small', 'Accepted answer'), bidi(f.solution, 'p'));
       if (!f.ok && f.explanation?.en) box.append(el('p', f.explanation.en));
       if (!f.ok && f.explanation?.ml) box.append(bidi(f.explanation.ml, 'p'));
-      box.append(button('Continue →', draw));
+      box.append(button('Continue →', () => state.run ? activity() : learner()));
       main.replaceChildren(box);
     } catch (e) {
       notice(e.message);
@@ -229,11 +261,6 @@ function activity() {
   };
   s.append(form);
   main.replaceChildren(el('h1', title), el('p', r.mode === 'placement' ? 'Question ' + (state.count + 1) + ' · up to 28' : 'Question ' + (r.done + 1) + ' of ' + r.total), bar, s);
-}
-function draw() {
-  notice('');
-  if (state.run) activity();else learner();
-  window.scrollTo(0, 0);
 }
 boot().catch(e => notice(e.message));
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});

@@ -39,3 +39,26 @@ test('practice and checkpoint use disjoint question IDs', () => {
   assert.ok(checkpoint.length > 0);
   assert.equal(practice.some(q => checkpoint.some(x => x.id === q.id)), false);
 });
+
+test('checkpoint recycles the oldest served questions through ten failed attempts', () => {
+  const l = newLane('A1');
+  const bank = ['letters', 'words'].flatMap(point => Array.from({ length: 3 }, (_, i) => ({
+    id: point + i,
+    point,
+    skill: 'grammar',
+    unit: 'script'
+  })));
+  unitQuestions(l, 'grammar', 'practice', bank);
+  l.practised = 'script';
+  const seen = [];
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const checkpoint = unitQuestions(l, 'grammar', 'checkpoint', bank);
+    assert.ok(checkpoint.length > 0, `checkpoint ${attempt + 1} should have questions`);
+    seen.push(...checkpoint.map(q => q.id));
+    finishUnit(l, 'checkpoint', checkpoint.map(q => ({ ok: false, point: q.point })));
+    const review = unitQuestions(l, 'grammar', 'review', bank);
+    finishUnit(l, 'review', review.map(q => ({ ok: true, point: q.point })));
+  }
+  assert.ok(seen.length >= 10);
+  assert.ok(new Set(seen).size < seen.length, 'pool should have recycled questions');
+});

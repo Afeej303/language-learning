@@ -25,7 +25,10 @@ export function validate(q) {
 }
 export function save(q) {
   validate(q);
-  db.prepare(`INSERT INTO questions(id,language,skill,level,unit,point,difficulty,status,body,approved_by,approved_at) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET language=excluded.language,skill=excluded.skill,level=excluded.level,unit=excluded.unit,point=excluded.point,difficulty=excluded.difficulty,status=excluded.status,body=excluded.body,approved_by=excluded.approved_by,approved_at=excluded.approved_at`).run(q.id, q.language, q.skill, q.level, q.unit, q.point, q.difficulty, q.status, JSON.stringify(q.body), q.approved_by || null, q.approved_at || null);
+  const old=db.prepare('SELECT language,skill,level,unit,point,difficulty,status,body FROM questions WHERE id=?').get(q.id);
+  const changed=old && ['language','skill','level','unit','point','difficulty'].some(k=>old[k]!==q[k]) || old && old.body!==JSON.stringify(q.body);
+  const saved=old?.status==='approved'&&changed?{...q,status:'in_review',approved_by:null,approved_at:null}:q;
+  db.prepare(`INSERT INTO questions(id,language,skill,level,unit,point,difficulty,status,body,approved_by,approved_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET language=excluded.language,skill=excluded.skill,level=excluded.level,unit=excluded.unit,point=excluded.point,difficulty=excluded.difficulty,status=excluded.status,body=excluded.body,approved_by=excluded.approved_by,approved_at=excluded.approved_at,created_by=COALESCE(questions.created_by,excluded.created_by)`).run(saved.id, saved.language, saved.skill, saved.level, saved.unit, saved.point, saved.difficulty, saved.status, JSON.stringify(saved.body), saved.approved_by || null, saved.approved_at || null, saved.created_by || null);
 }
 export function bank(approved = true) {
   return db.prepare('SELECT * FROM questions' + (approved ? " WHERE status='approved' AND language='ar'" : "")).all().map(q => ({
@@ -52,8 +55,16 @@ export function visible(q) {
     skill: q.skill,
     level: q.level,
     point: q.point,
-    options: type === 'choice' ? shuffle(options) : type === 'reorder' ? shuffle(answers[0].split(/\s+/)) : undefined,
+    options: type === 'choice' ? choiceOptions(q) : type === 'reorder' ? shuffle(answers[0].split(/\s+/)) : undefined,
     left: type === 'match' ? pairs.map(p => p[0]) : undefined,
     right: type === 'match' ? shuffle(pairs.map(p => p[1])) : undefined
   };
+}
+
+export function choiceOptions(q) {
+  const all = q.body.options || [];
+  const correct = q.body.answers.filter(a => all.includes(a));
+  const answer = shuffle(correct).slice(0, 1);
+  const distractors = shuffle(all.filter(a => !correct.includes(a))).slice(0, Math.max(0, 5 - answer.length));
+  return shuffle([...answer, ...distractors]);
 }
