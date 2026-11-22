@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {schedule,dueCards} from '../src/vocab.js';
+test('reviews grow and lapses reset the interval; withdrawn cards stay hidden',()=>{let c=schedule(null,true,0);assert.equal(c.days,1);c=schedule(c,true,0);assert.equal(c.days,6);c=schedule(c,true,0);assert.ok(c.days>6);c=schedule(c,false,0);assert.equal(c.reps,0);assert.deepEqual(dueCards({x:c},[],Infinity),[]);});
