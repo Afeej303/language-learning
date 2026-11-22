@@ -6,6 +6,8 @@ import { db, atomic } from './src/db.js';
 import { login, logout, identity } from './src/auth.js';
 import { syllabus, bank, save } from './src/content.js';
 import { load, persist, view, begin, answer } from './src/learning.js';
+import { importCsv, exportCsv, template as bankTemplate } from './src/bank-csv.js';
+import { clientIp, throttleKey } from './src/login-throttle.js';
 const root = resolve('public'),
   failures = new Map();
 const json = (res, status, data) => {
@@ -65,7 +67,7 @@ const server = http.createServer(async (req, res) => {
       b = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     }
     if (path === '/api/login' && post) {
-      const key = req.socket.remoteAddress,
+      const key = throttleKey(String(b.name), clientIp(req)),
         now = Date.now(),
         entry = failures.get(key);
       if (entry?.until > now && entry.count >= 30) return json(res, 429, {
@@ -111,14 +113,45 @@ const server = http.createServer(async (req, res) => {
         error: 'Teacher access required.'
       });
       if (path === '/api/teacher/questions' && !post) return json(res, 200, bank(false));
+      if (path === '/api/teacher/questions/export' && !post) {
+        res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="question-bank.csv"', 'Cache-Control': 'no-store' });
+        return res.end(exportCsv());
+      }
+      if (path === '/api/teacher/questions/template' && !post) {
+        res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="question-bank-template.csv"', 'Cache-Control': 'no-store' });
+        return res.end(bankTemplate);
+      }
+      if (path === '/api/teacher/questions/import' && post) {
+        if (typeof b.csv !== 'string') throw Error('Provide CSV text.');
+        const results = atomic(() => importCsv(b.csv));
+        return json(res, 200, { imported: results.filter(x => x.ok).length, rows: results });
+      }
+      if (path === '/api/teacher/wrong-answers' && !post) {
+        const rows = db.prepare(`SELECT question_id, point, raw_answer, count(*) AS count
+          FROM attempts WHERE correct=0 AND raw_answer <> ''
+          GROUP BY question_id, raw_answer ORDER BY count DESC, question_id`).all();
+        const questions = new Map(bank(false).map(q => [q.id, q]));
+        return json(res, 200, rows.filter(x => questions.has(x.question_id)).map(x => ({ ...x, cue: questions.get(x.question_id).body.cue, skill: questions.get(x.question_id).skill })));
+      }
+      if (path === '/api/teacher/wrong-answers/accept' && post) {
+        if (typeof b.question_id !== 'string' || typeof b.answer !== 'string' || !b.answer.trim() || b.answer.length > 2000) throw Error('Choose a valid answer to accept.');
+        atomic(() => {
+          const q = db.prepare('SELECT * FROM questions WHERE id=?').get(b.question_id);
+          if (!q) throw Error('Question not found.');
+          const body = JSON.parse(q.body);
+          if (!body.answers.includes(b.answer)) body.answers.push(b.answer);
+          if (body.type === 'choice' && !body.options.includes(b.answer)) body.options.push(b.answer);
+          save({ ...q, body });
+        });
+        return json(res, 200, { ok: true });
+      }
       if (path === '/api/teacher/questions' && post) {
         atomic(() => {
           const id = b.id || randomUUID();
           if (b.id && !db.prepare('SELECT id FROM questions WHERE id=?').get(id)) throw Error('Unknown question.');
-          save({
-            ...b,
-            id
-          });
+          const previous = b.id ? db.prepare('SELECT status,approved_by,approved_at FROM questions WHERE id=?').get(id) : null;
+          const status = b.status === 'approved' ? (previous?.status === 'in_review' ? 'approved' : previous?.status === 'approved' ? 'approved' : 'in_review') : b.status;
+          save({ ...b, id, status, approved_by: status === 'approved' ? (previous?.approved_by || user.id) : null, approved_at: status === 'approved' ? (previous?.approved_at || new Date().toISOString()) : null });
         });
         return json(res, 200, {});
       }
@@ -128,7 +161,9 @@ const server = http.createServer(async (req, res) => {
           name: u.name,
           lanes: s.lanes,
           weak: s.weak,
-          count: s.placement.seen.length
+          count: s.placement.seen.length,
+          performance: s.performance || {},
+          lastActivity: s.lastActivity || null
         };
       }));
     } else if (user.role === 'student' && ['/api/state', '/api/begin', '/api/answer'].includes(path)) {
@@ -136,7 +171,7 @@ const server = http.createServer(async (req, res) => {
         const s = load(user.id),
           rows = bank();
         let feedback;
-        if (path === '/api/begin' && post) begin(s, b.mode, b.skill, rows);else if (path === '/api/answer' && post) feedback = answer(s, b.input, b.token, rows);else if (path !== '/api/state' || post) throw Error('Invalid request.');
+        if (path === '/api/begin' && post) begin(s, b.mode, b.skill, rows);else if (path === '/api/answer' && post) feedback = answer(s, b.input, b.token, rows, user.id);else if (path !== '/api/state' || post) throw Error('Invalid request.');
         persist(user.id, s);
         return {
           ...view(s, rows),

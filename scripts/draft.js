@@ -17,7 +17,7 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
     },
     messages: [{
       role: 'user',
-      content: 'Draft four new ' + level + ' MSA items for ' + p.title + '. Use full tashkeel at A1, partial at A2, minimal at B1. Return JSON {items:[{skill,difficulty,body:{type:"choice",prompt,ml,cue,options,answers}}]}. skill one of ' + skills.join(', ') + '. difficulty integer 1–5. prompt English, ml Malayalam instruction, cue stimulus, options distinct including distractors, answers array of accepted exact choices.'
+      content: 'Draft four new ' + level + ' MSA items for ' + p.title + '. Use full tashkeel at A1, partial at A2, minimal at B1. Return JSON {items:[{skill,difficulty,body:{type:"choice",prompt,ml,cue,options,answers,explanation,explanationMl}}]}. skill one of ' + skills.join(', ') + '. difficulty integer 1–5. prompt English, ml Malayalam instruction, cue stimulus, options distinct including distractors, answers array of accepted exact choices, explanation English and explanationMl Malayalam each briefly explain the answer.'
     }]
   })
 });

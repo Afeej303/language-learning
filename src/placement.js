@@ -4,6 +4,7 @@ export function startPlacement() {
     seen: [],
     tracks: Object.fromEntries(skills.map(s => [s, {
       rank: 1,
+      correctStreak: 0,
       history: [],
       hits: []
     }]))
@@ -18,9 +19,18 @@ export function nextPlacement(p, questions) {
 export function recordPlacement(p, q, correct) {
   const t = p.tracks[q.skill],
     rank = levels.indexOf(q.level);
-  t.rank = Math.max(0, Math.min(2, rank + (correct ? 1 : -1)));
+  t.correctStreak ||= 0;
+  if (correct) {
+    t.correctStreak++;
+    const estimate = Math.min(2, rank + 1);
+    if (estimate > t.rank && t.correctStreak >= 2) t.rank = estimate;
+    else if (estimate <= t.rank) t.rank = estimate;
+  } else {
+    t.correctStreak = 0;
+    t.rank = Math.max(0, Math.min(2, rank - 1));
+  }
   t.history.push(t.rank);
-  t.hits.push(correct ? rank : -1);
+  t.hits.push(correct ? Math.min(2, rank + 1) : -1);
   p.seen.push(q.id);
 }
 export function placementDone(p) {
@@ -31,6 +41,8 @@ export function placementLevels(p) {
   return Object.fromEntries(skills.map(s => {
     const t = p.tracks[s];
     const recent = t.history.slice(-3).sort((a, b) => a - b);
-    return [s, levels[Math.max(0, Math.min(recent[1], Math.max(...t.hits)))]];
+    const middle = recent.length ? recent[Math.floor(recent.length / 2)] : t.rank;
+    const highest = t.hits.length ? Math.max(...t.hits) : t.rank;
+    return [s, levels[Math.max(0, Math.min(middle, highest))]];
   }));
 }

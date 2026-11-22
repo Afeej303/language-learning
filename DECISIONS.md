@@ -23,3 +23,10 @@
 ## Future
 - College SSO, independently calibrated placement items, larger teacher-reviewed banks and additional languages.
 - A one-command localhost demo creates temporary accounts and an approved, disposable database for review. Persistent deployments still start entirely in draft.
+- Question explanations are optional bilingual fields on each question. Wrong answers show the accepted answer and any supplied English and Malayalam explanation; generated drafts request both languages.
+- Login throttling keys failures by normalized username and client IP, so one user cannot exhaust every account's allowance. Proxy headers are ignored unless an operator explicitly names one with TRUSTED_PROXY_HEADER; only its first address is used.
+- Teachers may promote a student's commonly submitted wrong answer into that question's accepted variants. Wrong-answer suggestions are grouped by question and exact raw response so faculty remain in control of grading changes.
+- Placement upward movement requires two consecutive correct answers within a skill. A single correct response cannot raise the estimated band; an incorrect response resets the streak. Placement remains a local instructional estimate, not certification.
+- Seed banks provide at least twelve distinct Arabic example sentences for each grammar point. A practice set records its question IDs, and checkpoints exclude practiced and previously checkpointed IDs so those assessment items stay disjoint.
+- Persist every submitted answer in an append-only attempts table with the learner, item, raw response, correctness, activity context and UTC timestamp so teacher misconception reports can be derived without parsing mutable learner state.
+- Normalize common Arabic and Urdu spelling variants symmetrically for grading, including legacy Malayalam chillu spellings to their atomic Unicode characters.

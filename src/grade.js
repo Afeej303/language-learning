@@ -1,5 +1,16 @@
 export function normalize(value) {
-  return String(value).normalize('NFKC').toLowerCase().replace(/[\u0610-\u061a\u064b-\u065f\u0670\u0640]/gu, '').replace(/[أإآٱ]/gu, 'ا').replace(/[’']/gu, '').replace(/\p{P}/gu, ' ').replace(/\s+/gu, ' ').trim();
+  const chillus = [
+    ['ണ്‍', 'ൺ'], ['ണ്‌', 'ൺ'], ['ന്‍', 'ൻ'], ['ന്‌', 'ൻ'],
+    ['ര്‍', 'ർ'], ['ര്‌', 'ർ'], ['ല്‍', 'ൽ'], ['ല്‌', 'ൽ'],
+    ['ള്‍', 'ൾ'], ['ള്‌', 'ൾ'], ['ക്‍', 'ൿ'], ['ക്‌', 'ൿ']
+  ];
+  let text = String(value);
+  for (const [legacy, atomic] of chillus) text = text.split(legacy).join(atomic);
+  return text.normalize('NFKC').toLowerCase()
+    .replace(/[\u0610-\u061a\u064b-\u065f\u0670\u0640]/gu, '')
+    .replace(/[أإآٱ]/gu, 'ا').replace(/ة/gu, 'ه').replace(/ى/gu, 'ي')
+    .replace(/ک/gu, 'ك').replace(/ی/gu, 'ي').replace(/ؤ/gu, 'و').replace(/ئ/gu, 'ي')
+    .replace(/[’']/gu, '').replace(/\p{P}/gu, ' ').replace(/\s+/gu, ' ').trim();
 }
 // Permit one internal typing error in a long word, preserving word order and count.
 function closeWord(a, b) {

@@ -15,8 +15,15 @@ const area = () => Object.assign(el('textarea'), {
   dir: 'auto'
 });
 export async function teacher(main, syllabus) {
-  const [bank, students] = await Promise.all([api('teacher/questions'), api('teacher/students')]);
+  const [bank, students, wrongAnswers] = await Promise.all([api('teacher/questions'), api('teacher/students'), api('teacher/wrong-answers')]);
   const workshop = section('Question workshop', 'ചോദ്യശേഖരം');
+  const tools = el('div');
+  for (const [label, url] of [['Download CSV template','teacher/questions/template'],['Export full question bank','teacher/questions/export']]) {
+    const link=el('a',label); link.href='/api/'+url; link.download=''; tools.append(link,el('span',' · '));
+  }
+  const upload=Object.assign(el('input'),{type:'file',accept:'.csv,text/csv'}), importButton=el('button','Import CSV'); importButton.type='button';
+  importButton.onclick=async()=>{ try { if(!upload.files[0]) throw Error('Choose a CSV file.'); const result=await api('teacher/questions/import',{csv:await upload.files[0].text()}); const errors=result.rows.filter(r=>!r.ok).map(r=>'Row '+r.row+': '+r.error); notice('Imported '+result.imported+' draft questions.'+(errors.length?' '+errors.join(' | '):'')); await teacher(main,syllabus); } catch(e){notice(e.message)} };
+  tools.append(upload,importButton);
   const form = el('form');
   const picker = dropdown([['', 'Create a question'], ...bank.map(q => [q.id, q.status + ' · ' + q.level + ' · ' + q.skill + ' · ' + q.body.cue])]);
   const point = dropdown(syllabus.map(p => [p.point, p.level + ' / ' + p.unit + ' / ' + p.title]));
@@ -29,12 +36,12 @@ export async function teacher(main, syllabus) {
     max: 5,
     required: true
   });
-  const [prompt, ml, cue, answers, options, pairs] = Array.from({
-    length: 6
+  const [prompt, ml, cue, answers, options, pairs, explanation, explanationMl] = Array.from({
+    length: 8
   }, area);
   const optionField = field('Choices · one per line', options);
   const pairsField = field('Pairs · Arabic | meaning, one pair per line', pairs);
-  const answerField = field('Accepted answers · one per line', answers);
+  const answerField = field('Accepted answers · one per line (use multiple lines for translation alternatives)', answers);
   function format() {
     optionField.hidden = type.value !== 'choice';
     pairsField.hidden = type.value !== 'match';
@@ -54,12 +61,14 @@ export async function teacher(main, syllabus) {
     answers.value = b.answers?.join('\n') || '';
     options.value = b.options?.join('\n') || '';
     pairs.value = b.pairs?.map(p => p.join(' | ')).join('\n') || '';
+    explanation.value = b.explanation || '';
+    explanationMl.value = b.explanationMl || '';
     format();
   }
   picker.onchange = populate;
   type.onchange = format;
   populate();
-  form.append(field('Select question · ചോദ്യം', picker), field('Syllabus point', point), field('Skill', skill), field('Format', type), field('Difficulty · 1 to 5', difficulty), field('English instruction', prompt), field('Malayalam instruction', ml), field('Text to present', cue), optionField, pairsField, answerField, field('Publication status', status), el('button', 'Save question'));
+  form.append(field('Select question · ചോദ്യം', picker), field('Syllabus point', point), field('Skill', skill), field('Format', type), field('Difficulty · 1 to 5', difficulty), field('English instruction', prompt), field('Malayalam instruction', ml), field('Text to present', cue), optionField, pairsField, answerField, field('Explanation in English (optional)', explanation), field('Explanation in Malayalam (optional)', explanationMl), field('Publication status', status), el('button', 'Save question'));
   form.onsubmit = async event => {
     event.preventDefault();
     try {
@@ -69,6 +78,8 @@ export async function teacher(main, syllabus) {
         prompt: prompt.value,
         ml: ml.value,
         cue: cue.value,
+        explanation: explanation.value.trim(),
+        explanationMl: explanationMl.value.trim(),
         answers: lines(answers)
       };
       if (p.point === 'letters' && body.answers.some(a => /[َُِ]/u.test(a))) body.requireVowels = true;
@@ -94,7 +105,24 @@ export async function teacher(main, syllabus) {
       notice(e.message);
     }
   };
-  workshop.append(form);
+  workshop.append(tools,form);
+  const errorReview = section('Common wrong answers', 'പതിവായി തെറ്റുന്ന ഉത്തരങ്ങൾ');
+  if (!wrongAnswers.length) errorReview.append(el('p', 'No wrong answers recorded yet.'));
+  for (const row of wrongAnswers) {
+    const item = el('article');
+    item.append(el('p', `${row.point} · ${row.cue} · “${row.raw_answer}” × ${row.count}`));
+    const accept = el('button', 'Accept this answer');
+    accept.type = 'button';
+    accept.onclick = async () => {
+      try {
+        await api('teacher/wrong-answers/accept', { question_id: row.question_id, answer: row.raw_answer });
+        notice('Accepted answer added.');
+        await teacher(main, syllabus);
+      } catch (e) { notice(e.message); }
+    };
+    item.append(accept);
+    errorReview.append(item);
+  }
   const reports = section('Student progress', 'വിദ്യാർഥികളുടെ പുരോഗതി');
   if (!students.length) reports.append(el('p', 'No student accounts yet.'));
   for (const student of students) {
@@ -109,5 +137,29 @@ export async function teacher(main, syllabus) {
     card.append(el('small', 'Weak points · ' + (weak.map(([p, n]) => p + ' × ' + n).join(', ') || 'None recorded')));
     reports.append(card);
   }
-  main.replaceChildren(workshop, reports);
+  const dashboard = section('Class dashboard', 'ക്ലാസ് പുരോഗതി');
+  const grammarRows = [];
+  for (const student of students) {
+    const card = el('article');
+    card.append(el('h3', student.name));
+    const levels = student.lanes ? Object.entries(student.lanes).map(([skill, lane]) => `${skill}: ${lane.level}`).join(' · ') : 'Placement in progress';
+    card.append(el('p', 'Levels · ' + levels));
+    card.append(el('p', 'Last activity · ' + (student.lastActivity ? new Date(student.lastActivity).toLocaleString() : 'No answers yet')));
+    const grammarStats = Object.entries(student.performance || {}).filter(([point]) => syllabus.some(p => p.point === point && p.unit && p.title));
+    const grammar = el('p');
+    grammar.append(document.createTextNode('Grammar point accuracy · '));
+    grammar.append(document.createTextNode(grammarStats.length ? grammarStats.map(([point, stat]) => `${point}: ${Math.round(stat.correct / stat.total * 100)}% (${stat.correct}/${stat.total})`).join(' · ') : 'No grammar answers yet'));
+    card.append(grammar);
+    for (const [point, stat] of grammarStats) {
+      const row = grammarRows.find(x => x.point === point) || { point, total: 0, correct: 0 };
+      row.total += stat.total;
+      row.correct += stat.correct;
+      if (!grammarRows.some(x => x.point === point)) grammarRows.push(row);
+    }
+    dashboard.append(card);
+  }
+  const weakest = grammarRows.filter(x => x.total).sort((a,b) => a.correct/a.total - b.correct/b.total).slice(0, 5);
+  dashboard.append(el('h3', 'Class weakest grammar points'));
+  dashboard.append(el('p', weakest.length ? weakest.map(x => `${x.point} · ${Math.round(x.correct/x.total*100)}% (${x.correct}/${x.total})`).join(' · ') : 'No grammar activity yet.'));
+  main.replaceChildren(workshop, errorReview, reports, dashboard);
 }

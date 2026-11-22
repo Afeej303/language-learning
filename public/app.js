@@ -218,6 +218,8 @@ function activity() {
       const f = state.feedback;
       const box = section(f.ok ? 'Correct' : 'Answer recorded', f.ok ? 'ശരിയാണ്' : 'ഉത്തരം രേഖപ്പെടുത്തി');
       if (!f.ok && f.solution) box.append(el('small', 'Accepted answer'), bidi(f.solution, 'p'));
+      if (!f.ok && f.explanation?.en) box.append(el('p', f.explanation.en));
+      if (!f.ok && f.explanation?.ml) box.append(bidi(f.explanation.ml, 'p'));
       box.append(button('Continue →', draw));
       main.replaceChildren(box);
     } catch (e) {

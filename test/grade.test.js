@@ -5,6 +5,14 @@ test('normalizes harakat, hamza and spacing while preserving Malayalam vowels', 
   assert.equal(normalize('  أَكَلَ   إِبْرَاهِيمُ. '), 'اكل ابراهيم');
   assert.notEqual(normalize('പടി'), normalize('പട'));
 });
+test('normalizes common Arabic and Urdu orthographic variants on both sides', () => {
+  for (const [a, b] of [['مدرسة', 'مدرسه'], ['فتى', 'فتي'], ['ک', 'ك'], ['ی', 'ي'], ['ؤ', 'و'], ['ئ', 'ي']])
+    assert.equal(normalize(a), normalize(b), `${a} should normalize like ${b}`);
+});
+test('normalizes Malayalam legacy chillu sequences to atomic chillus', () => {
+  for (const [legacy, atomic] of [['ണ്‍', 'ൺ'], ['ന്‍', 'ൻ'], ['ര്‍', 'ർ'], ['ല്‍', 'ൽ'], ['ള്‍', 'ൾ'], ['ക്‍', 'ൿ']])
+    assert.equal(normalize(legacy), normalize(atomic), `${legacy} should normalize like ${atomic}`);
+});
 test('short exact alternatives, restricted typo tolerance, no missing negation', () => {
   const b = {
     type: 'translation',

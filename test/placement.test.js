@@ -29,3 +29,13 @@ test('unstable tracks run to the hard ceiling', () => {
   p.seen.length = 28;
   assert.equal(placementDone(p), true);
 });
+test('two consecutive correct responses are required for upward band estimates', () => {
+  const p = startPlacement();
+  const q1 = { id: 'a2-1', skill: 'reading', level: 'A2' };
+  recordPlacement(p, q1, true);
+  assert.equal(placementLevels(p).reading, 'A2');
+  recordPlacement(p, { ...q1, id: 'a2-2' }, true);
+  assert.equal(placementLevels(p).reading, 'B1');
+  recordPlacement(p, { ...q1, id: 'a2-3' }, false);
+  assert.equal(p.tracks.reading.correctStreak, 0);
+});

@@ -13,6 +13,7 @@ export function load(id) {
     run: null,
     cards: {},
     weak: {},
+    performance: {},
     streak: 0,
     day: ''
   };
@@ -64,11 +65,13 @@ export function begin(s, mode, skill, bank) {
     results: []
   };
 }
-export function answer(s, input, token, bank) {
+export function answer(s, input, token, bank, userId) {
   const r = s.run,
     q = active(r, bank);
   if (!q || r.token !== token) throw Error('Activity changed. Reload your workspace.');
   const ok = grade(q.body, input);
+  db.prepare('INSERT INTO attempts(user,question_id,raw_answer,correct,mode,skill,point,attempted_at) VALUES(?,?,?,?,?,?,?,?)')
+    .run(userId, q.id, typeof input === 'string' ? input : JSON.stringify(input), ok ? 1 : 0, r.mode, q.skill, q.point, new Date().toISOString());
   r.results.push({
     point: q.point,
     ok
@@ -82,6 +85,13 @@ export function answer(s, input, token, bank) {
     s.day = day;
   }
   s.weak[q.point] = Math.max(0, (s.weak[q.point] || 0) + (ok ? -1 : 1));
+  if (q.skill === 'grammar') {
+    s.performance ||= {};
+    const pointStats = s.performance[q.point] ||= { total: 0, correct: 0 };
+    pointStats.total++;
+    if (ok) pointStats.correct++;
+  }
+  s.lastActivity = now;
   if (q.skill === 'vocabulary') s.cards[q.id] = schedule(s.cards[q.id], ok, now);
   if (r.mode === 'placement') {
     recordPlacement(s.placement, q, ok);
@@ -110,6 +120,7 @@ export function answer(s, input, token, bank) {
   }
   return {
     ok,
-    solution: r.mode === 'placement' ? undefined : q.body.type === 'match' ? q.body.pairs.map(x => x.join(' → ')).join(' · ') : q.body.answers[0]
+    solution: q.body.type === 'match' ? q.body.pairs.map(x => x.join(' → ')).join(' · ') : q.body.answers[0],
+    explanation: ok ? undefined : { en: q.body.explanation || '', ml: q.body.explanationMl || '' }
   };
 }

@@ -29,3 +29,13 @@ test('final supported level promotes to B2 without artificial content', () => {
   assert.equal(l.level, 'B2');
   assert.equal(current(l), undefined);
 });
+test('practice and checkpoint use disjoint question IDs', () => {
+  const l = newLane('A1');
+  const bank = ['letters', 'words'].flatMap(point => Array.from({length: 12}, (_, i) => ({ id: point + i, point, skill: 'grammar', unit: 'script' })));
+  const practice = unitQuestions(l, 'grammar', 'practice', bank);
+  l.practised = 'script';
+  const checkpoint = unitQuestions(l, 'grammar', 'checkpoint', bank);
+  assert.ok(practice.length > 0);
+  assert.ok(checkpoint.length > 0);
+  assert.equal(practice.some(q => checkpoint.some(x => x.id === q.id)), false);
+});

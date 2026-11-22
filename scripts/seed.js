@@ -1,7 +1,8 @@
 import { syllabus, skills, save } from '../src/content.js';
 import { db, atomic } from '../src/db.js';
+import { seedVariants } from '../content/seed-variants.js';
 atomic(() => {
-  for (const p of syllabus) for (const [i, [ar, en, ml, word]] of p.examples.entries()) for (const skill of skills) {
+  for (const p of syllabus) for (const [i, [ar, en, ml, word]] of [...p.examples, ...(seedVariants[p.point] || [])].entries()) for (const skill of skills) {
     const id = [p.point, i, skill].join('-');
     if (db.prepare('SELECT id FROM questions WHERE id=?').get(id)) continue;
     let body;
@@ -10,7 +11,7 @@ atomic(() => {
       prompt: 'Read and choose the meaning',
       ml: 'വായിച്ച് അർഥം തിരഞ്ഞെടുക്കുക',
       cue: ar,
-      options: p.examples.map(e => e[1]),
+      options: [...p.examples, ...(seedVariants[p.point] || [])].map(e => e[1]),
       answers: [en]
     };
     if (skill === 'grammar') body = i === 1 && ar.includes(' ') ? {
@@ -31,14 +32,14 @@ atomic(() => {
       prompt: 'Match each Arabic expression',
       ml: 'അറബി പ്രയോഗങ്ങളുടെ അർഥം യോജിപ്പിക്കുക',
       cue: p.title,
-      pairs: p.examples.map(e => [e[0], e[2]]),
+      pairs: [...p.examples, ...(seedVariants[p.point] || [])].slice(0, 8).map(e => [e[0], e[2]]),
       answers: [ml]
     } : {
       type: 'choice',
       prompt: 'Choose the Arabic expression',
       ml: 'അറബി പ്രയോഗം തിരഞ്ഞെടുക്കുക',
       cue: ml,
-      options: p.examples.map(e => e[0]),
+      options: [...p.examples, ...(seedVariants[p.point] || [])].map(e => e[0]),
       answers: [ar]
     };
     if (skill === 'translation') {
@@ -59,7 +60,7 @@ atomic(() => {
       level: p.level,
       unit: p.unit,
       point: p.point,
-      difficulty: i + 1,
+      difficulty: Math.min(i + 1, 5),
       status: 'draft',
       body
     });

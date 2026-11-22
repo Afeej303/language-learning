@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { DatabaseSync } from 'node:sqlite';
 test('shared lab workflow through the HTTP API', async t => {
   const dir = mkdtempSync(join(tmpdir(), 'dhic-'));
   const env = {
@@ -65,10 +66,10 @@ test('shared lab workflow through the HTTP API', async t => {
     mode: 'placement'
   })).status, 400);
   const drafts = (await admin('questions')).data;
-  assert.equal(drafts.length, 120);
+  assert.equal(drafts.length, 480);
   assert.ok(drafts.every(q => q.status === 'draft'));
   cli('approve');
-  const bank = (await admin('questions')).data;
+  let bank = (await admin('questions')).data;
   let state = (await s('begin', {
     mode: 'placement'
   })).data;
@@ -84,8 +85,11 @@ test('shared lab workflow through the HTTP API', async t => {
   })).status, 400);
   await admin('questions', {
     ...first,
-    status: 'approved'
+    status: 'in_review'
   });
+  await admin('questions', { ...first, status: 'approved' });
+  bank = (await admin('questions')).data;
+  state = (await s('begin', { mode: 'placement' })).data;
   async function submit(correct) {
     const q = bank.find(q => q.id === state.run.q.id);
     assert.ok(!('answers' in state.run.q));
@@ -96,7 +100,7 @@ test('shared lab workflow through the HTTP API', async t => {
       input,
       token
     });
-    assert.equal(response.status, 200);
+    assert.equal(response.status, 200, JSON.stringify(response.data));
     state = response.data;
     assert.equal((await s('answer', {
       input,
@@ -104,13 +108,26 @@ test('shared lab workflow through the HTTP API', async t => {
     })).status, 400);
   }
   while (state.run) await submit(false);
+  const audit = new DatabaseSync(env.DB_FILE);
+  const attempts = audit.prepare('SELECT user,question_id,raw_answer,correct,mode,skill,point,attempted_at FROM attempts').all();
+  assert.equal(attempts.length, 20);
+  assert.ok(attempts.every(a => a.user > 0 && a.question_id && a.raw_answer === 'incorrect' && a.correct === 0 && a.mode === 'placement' && a.skill && a.point && !Number.isNaN(Date.parse(a.attempted_at))));
+  audit.close();
+  const errors = (await admin('wrong-answers')).data;
+  assert.ok(errors.some(row => row.raw_answer === 'incorrect' && row.count > 0));
+  const candidate = errors.find(row => row.raw_answer === 'incorrect');
+  assert.equal((await admin('wrong-answers/accept', { question_id: candidate.question_id, answer: candidate.raw_answer })).status, 200);
+  assert.ok((await admin('questions')).data.find(q => q.id === candidate.question_id).body.answers.includes('incorrect'));
+  const currentBank = (await admin('questions')).data;
+  assert.ok(currentBank.some(q => q.status === 'approved' && q.skill === 'reading' && q.unit === 'script' && q.point === 'letters'));
+  assert.ok(currentBank.some(q => q.status === 'approved' && q.skill === 'reading' && q.unit === 'script' && q.point === 'words'));
   assert.equal(state.lanes.reading.level, 'A1');
   for (const [mode, correct] of [['practice', true], ['checkpoint', false], ['review', true], ['checkpoint', true], ['practice', true], ['checkpoint', true]]) {
     const response = await s('begin', {
       mode,
       skill: 'reading'
     });
-    assert.equal(response.status, 200);
+    assert.equal(response.status, 200, `${mode} ${state.lanes.reading.level}: ${JSON.stringify(response.data)}`);
     state = response.data;
     while (state.run) await submit(correct);
   }

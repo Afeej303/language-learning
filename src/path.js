@@ -15,12 +15,15 @@ export function unitQuestions(lane, skill, mode, bank) {
   if (mode === 'checkpoint' && lane.practised !== unit) throw Error('Complete practice first.');
   const points = mode === 'review' ? lane.review : syllabus.filter(p => p.unit === unit).map(p => p.point);
   if (!points.length) throw Error('No review is due.');
-  const groups = points.map(point => shuffle(bank.filter(q => q.point === point && q.skill === skill && q.unit === unit)));
+  const excluded = mode === 'checkpoint' ? new Set([...(lane.practiceIds || []), ...(lane.checkpointIds || [])]) : new Set();
+  const groups = points.map(point => shuffle(bank.filter(q => q.point === point && q.skill === skill && q.unit === unit && !excluded.has(q.id))));
   if (groups.some(g => !g.length)) throw Error('Waiting for teacher approval of questions for this unit.');
   const rows = [];
   while (groups.some(g => g.length) && rows.length < 5) {
     for (const g of groups) if (g.length && rows.length < 5) rows.push(g.pop());
   }
+  if (mode === 'practice') lane.practiceIds = rows.map(q => q.id);
+  if (mode === 'checkpoint') lane.checkpointIds = [...new Set([...(lane.checkpointIds || []), ...rows.map(q => q.id)])];
   return rows;
 }
 export function finishUnit(lane, mode, results) {
