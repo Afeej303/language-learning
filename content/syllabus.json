@@ -1,0 +1,292 @@
+[
+  {
+    "level": "A1",
+    "unit": "script",
+    "point": "letters",
+    "title": "Letters and short vowels",
+    "ml": "അക്ഷരങ്ങളും ഹ്രസ്വസ്വരങ്ങളും",
+    "lesson": "Read from right to left. Fatḥa gives a short a, kasra a short i and ḍamma a short u.",
+    "lessonMl": "വലത്തുനിന്ന് ഇടത്തേക്ക് വായിക്കുക. ഫത്ഹ, കസ്റ, ദമ്മ എന്നിവ ഹ്രസ്വസ്വരങ്ങളെ സൂചിപ്പിക്കുന്നു.",
+    "examples": [
+      [
+        "بَ",
+        "ba",
+        "ബ",
+        "بَ"
+      ],
+      [
+        "تِ",
+        "ti",
+        "തി",
+        "تِ"
+      ],
+      [
+        "مُ",
+        "mu",
+        "മു",
+        "مُ"
+      ]
+    ]
+  },
+  {
+    "level": "A1",
+    "unit": "script",
+    "point": "words",
+    "title": "Joining letters into words",
+    "ml": "അക്ഷരങ്ങൾ ചേർത്ത് വായിക്കൽ",
+    "lesson": "Follow the joined shapes and read the vowel marks. Final tanwīn adds an n sound in connected reading.",
+    "lessonMl": "ചേർന്നെഴുതിയ അക്ഷരങ്ങളും സ്വരചിഹ്നങ്ങളും ശ്രദ്ധിക്കുക. തുടർവായനയിൽ തൻവീൻ അവസാനം നൂൻ ശബ്ദം നൽകുന്നു.",
+    "examples": [
+      [
+        "كِتَابٌ",
+        "a book",
+        "ഒരു പുസ്തകം",
+        "كِتَابٌ"
+      ],
+      [
+        "قَلَمٌ",
+        "a pen",
+        "ഒരു പേന",
+        "قَلَمٌ"
+      ],
+      [
+        "بَابٌ",
+        "a door",
+        "ഒരു വാതിൽ",
+        "بَابٌ"
+      ]
+    ]
+  },
+  {
+    "level": "A1",
+    "unit": "sentences",
+    "point": "nominal",
+    "title": "Nominal sentences",
+    "ml": "നാമവാക്യങ്ങൾ",
+    "lesson": "Name the topic first, then give information about it. A present-tense statement can omit “is”.",
+    "lessonMl": "ആദ്യം വിഷയം പറയുക, തുടർന്ന് അതിന്റെ വിശേഷം നൽകുക. വർത്തമാനകാലത്ത് പ്രത്യേക ക്രിയ ആവശ്യമില്ല.",
+    "examples": [
+      [
+        "الْكِتَابُ جَدِيدٌ",
+        "The book is new",
+        "പുസ്തകം പുതിയതാണ്",
+        "جَدِيدٌ"
+      ],
+      [
+        "الْبَابُ مَفْتُوحٌ",
+        "The door is open",
+        "വാതിൽ തുറന്നിരിക്കുന്നു",
+        "مَفْتُوحٌ"
+      ],
+      [
+        "الْمَسْجِدُ كَبِيرٌ",
+        "The mosque is large",
+        "പള്ളി വലുതാണ്",
+        "كَبِيرٌ"
+      ]
+    ]
+  },
+  {
+    "level": "A1",
+    "unit": "sentences",
+    "point": "verbal",
+    "title": "Verbal sentences",
+    "ml": "ക്രിയാവാക്യങ്ങൾ",
+    "lesson": "Start with the action, then identify its subject. The perfect verb describes a completed event.",
+    "lessonMl": "ആദ്യം ക്രിയയും തുടർന്ന് കർത്താവും വരുന്നു. ഭൂതകാലക്രിയ പൂർത്തിയായ പ്രവൃത്തിയെ സൂചിപ്പിക്കുന്നു.",
+    "examples": [
+      [
+        "جَلَسَ الطَّالِبُ",
+        "The student sat down",
+        "വിദ്യാർഥി ഇരുന്നു",
+        "جَلَسَ"
+      ],
+      [
+        "دَخَلَ الْمُعَلِّمُ",
+        "The teacher entered",
+        "അധ്യാപകൻ പ്രവേശിച്ചു",
+        "دَخَلَ"
+      ],
+      [
+        "خَرَجَ الْوَلَدُ",
+        "The boy went out",
+        "ആൺകുട്ടി പുറത്തുപോയി",
+        "خَرَجَ"
+      ]
+    ]
+  },
+  {
+    "level": "A2",
+    "unit": "relations",
+    "point": "location",
+    "title": "Prepositional phrases",
+    "ml": "സ്ഥാനസൂചക പ്രയോഗങ്ങൾ",
+    "lesson": "A preposition governs the genitive. Look for the final kasra on its noun.",
+    "lessonMl": "ഹർഫുൽ ജറിന് ശേഷമുള്ള നാമത്തിന്റെ അവസാനത്തെ കസ്റ ശ്രദ്ധിക്കുക.",
+    "examples": [
+      [
+        "الكتاب عَلَى المكتبِ",
+        "The book is on the desk",
+        "പുസ്തകം മേശപ്പുറത്താണ്",
+        "عَلَى"
+      ],
+      [
+        "القلم فِي الحقيبةِ",
+        "The pen is in the bag",
+        "പേന ബാഗിലാണ്",
+        "فِي"
+      ],
+      [
+        "الولد مِنَ القريةِ",
+        "The boy is from the village",
+        "ആൺകുട്ടി ഗ്രാമത്തിൽ നിന്നാണ്",
+        "مِنَ"
+      ]
+    ]
+  },
+  {
+    "level": "A2",
+    "unit": "relations",
+    "point": "possession",
+    "title": "The iḍāfa construction",
+    "ml": "ഇദാഫത്ത്",
+    "lesson": "Link two nouns to express possession. The first drops tanwīn and the second takes the genitive.",
+    "lessonMl": "ഉടമസ്ഥത കാണിക്കാൻ രണ്ടു നാമങ്ങൾ ചേർക്കുക. ഒന്നാമത്തേതിന് തൻവീൻ വരില്ല. രണ്ടാമത്തേത് മജ്റൂറാണ്.",
+    "examples": [
+      [
+        "كتابُ الطالبِ جديد",
+        "The student’s book is new",
+        "വിദ്യാർഥിയുടെ പുസ്തകം പുതിയതാണ്",
+        "الطالبِ"
+      ],
+      [
+        "بابُ المسجدِ مفتوح",
+        "The mosque door is open",
+        "പള്ളിയുടെ വാതിൽ തുറന്നിരിക്കുന്നു",
+        "المسجدِ"
+      ],
+      [
+        "قلمُ المعلمِ طويل",
+        "The teacher’s pen is long",
+        "അധ്യാപകന്റെ പേന നീളമുള്ളതാണ്",
+        "المعلمِ"
+      ]
+    ]
+  },
+  {
+    "level": "A2",
+    "unit": "actions",
+    "point": "present",
+    "title": "Imperfect verbs and agreement",
+    "ml": "വർത്തമാനകാലവും ക്രിയാപൊരുത്തവും",
+    "lesson": "Match the imperfect prefix to the subject. Compare first person أ and third-person feminine ت.",
+    "lessonMl": "കർത്താവിന് അനുയോജ്യമായ അക്ഷരത്തിലാണ് വർത്തമാനകാലക്രിയ തുടങ്ങുന്നത്. أنا, هي എന്നിവ താരതമ്യം ചെയ്യുക.",
+    "examples": [
+      [
+        "أنا أقرأُ الكتاب",
+        "I read the book",
+        "ഞാൻ പുസ്തകം വായിക്കുന്നു",
+        "أقرأُ"
+      ],
+      [
+        "هي تكتبُ الدرس",
+        "She writes the lesson",
+        "അവൾ പാഠം എഴുതുന്നു",
+        "تكتبُ"
+      ],
+      [
+        "نحن نفتحُ الباب",
+        "We open the door",
+        "ഞങ്ങൾ വാതിൽ തുറക്കുന്നു",
+        "نفتحُ"
+      ]
+    ]
+  },
+  {
+    "level": "B1",
+    "unit": "clauses",
+    "point": "relative",
+    "title": "Relative clauses",
+    "ml": "ബന്ധവാക്യങ്ങൾ",
+    "lesson": "Use a relative pronoun agreeing with a definite antecedent to introduce a describing clause.",
+    "lessonMl": "നിർദിഷ്ട നാമത്തെ വിശദീകരിക്കുന്ന ഉപവാക്യം തുടങ്ങാൻ അതിന് യോജിച്ച ബന്ധസർവനാമം ഉപയോഗിക്കുക.",
+    "examples": [
+      [
+        "جاء الطالب الذي نجح",
+        "The student who succeeded came",
+        "വിജയിച്ച വിദ്യാർഥി വന്നു",
+        "الذي"
+      ],
+      [
+        "حضرت المعلمة التي سافرت",
+        "The teacher who travelled arrived",
+        "യാത്ര ചെയ്ത അധ്യാപിക എത്തി",
+        "التي"
+      ],
+      [
+        "عاد الطلاب الذين درسوا",
+        "The students who studied returned",
+        "പഠിച്ച വിദ്യാർഥികൾ മടങ്ങിവന്നു",
+        "الذين"
+      ]
+    ]
+  },
+  {
+    "level": "B1",
+    "unit": "clauses",
+    "point": "kana",
+    "title": "Past states with kāna",
+    "ml": "കാനയും ഭൂതകാലാവസ്ഥയും",
+    "lesson": "Kāna places a nominal sentence in the past. Its predicate takes the accusative.",
+    "lessonMl": "കാന നാമവാക്യത്തെ ഭൂതകാലത്തിലാക്കുന്നു. അതിന്റെ ഖബർ മൻസൂബാണ്.",
+    "examples": [
+      [
+        "كان الباب مفتوحا",
+        "The door was open",
+        "വാതിൽ തുറന്നിരുന്നു",
+        "مفتوحا"
+      ],
+      [
+        "كانت الغرفة واسعة",
+        "The room was spacious",
+        "മുറി വിശാലമായിരുന്നു",
+        "واسعة"
+      ],
+      [
+        "كان الطريق طويلا",
+        "The road was long",
+        "വഴി നീളമുള്ളതായിരുന്നു",
+        "طويلا"
+      ]
+    ]
+  },
+  {
+    "level": "B1",
+    "unit": "translation",
+    "point": "reason",
+    "title": "Translating reason and purpose",
+    "ml": "കാരണവും ലക്ഷ്യവും പരിഭാഷയിൽ",
+    "lesson": "Distinguish a reason introduced by لأن from a purpose introduced by كي. Preserve the relationship in translation.",
+    "lessonMl": "لأن കാരണം അറിയിക്കുന്നു. كي ലക്ഷ്യം അറിയിക്കുന്നു. പരിഭാഷയിൽ ഈ ബന്ധം നിലനിർത്തുക.",
+    "examples": [
+      [
+        "جلست لأنني تعبت",
+        "I sat down because I was tired",
+        "ക്ഷീണിച്ചതിനാൽ ഞാൻ ഇരുന്നു",
+        "لأنني"
+      ],
+      [
+        "ذهبت كي أتعلم",
+        "I went in order to learn",
+        "പഠിക്കാൻ വേണ്ടി ഞാൻ പോയി",
+        "كي"
+      ],
+      [
+        "بقي لأنه مريض",
+        "He stayed because he was ill",
+        "രോഗിയായതിനാൽ അവൻ അവിടെ നിന്നു",
+        "لأنه"
+      ]
+    ]
+  }
+]
