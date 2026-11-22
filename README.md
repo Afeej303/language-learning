@@ -68,6 +68,12 @@ Run `npm test`. The suite covers normalization and short-answer grading, placeme
 
 For device acceptance, open the app over trusted HTTPS on a lab tablet, install it, try all five input formats in both orientations, inspect Arabic combining marks and Malayalam conjuncts, and sign out before switching users. Disconnect the network and reopen the app to check the cached sign-in shell. Learning and grading require a connection.
 
+### Ship a client update
+
+After changing any shell asset (`public/index.html`, `app.js`, `ui.js`, `teacher.js`, `style.css`, the manifest or icons), update `BUILD_ID` in `public/sw.js` to the new shell SHA-256. Run `node scripts/check-shell-version.js` (also included in `npm test`) and `npm test`; it fails if a shell file changed without a matching cache version. Deploy the complete release together. Connected clients fetch shell assets network-first; installed service workers activate immediately and reload the page once it is safe. Offline clients use their last cached copy until they reconnect.
+
+To force-clear a lab device's cached app, reconnect it, open the app's site settings, clear **site data/storage** for the college app origin, then close all app tabs and reopen the site. If site settings are unavailable, use the browser's developer tools: Application/Storage → Service Workers → **Unregister**, then Clear storage → **Clear site data**. Reopen while connected to install the current release. Repeat on each installed tablet/browser profile.
+
 ## Self-hosting
 
 Run the server as a dedicated OS user with write access to its data directory. Set DB_FILE to an absolute path on local persistent storage. For a TrueNAS-hosted deployment, mount a persistent dataset into the application container for the database. Keep SQLite's database and journal files on the same local mounted volume. Run a single Node process. PORT defaults to 3000 and HOST to 0.0.0.0. Keep the lab service inside the college network.

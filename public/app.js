@@ -9,7 +9,9 @@ const names = {
   translation: 'വിവർത്തനം'
 };
 let syllabus = [],
-  state;
+  state,
+  pendingControllerReload = false,
+  reloadedForController = false;
 function hero(title, sub) {
   const h = el('div', undefined, 'hero');
   h.append(el('p', 'DARUL HUDA  /  LANGUAGE LAB', 'eyebrow'), el('h1', title), el('p', sub, 'intro'));
@@ -150,6 +152,12 @@ function activity() {
   s.prepend(el('small', q.skill.toUpperCase() + '  /  ' + q.level, 'eyebrow'));
   s.append(bidi(q.cue, 'blockquote'));
   const form = el('form');
+  form.dataset.answerForm = 'true';
+  form.addEventListener('input', () => { form.dataset.answerDirty = 'true'; });
+  form.addEventListener('change', () => { form.dataset.answerDirty = 'true'; });
+  form.addEventListener('click', event => {
+    if (event.target.closest('button') && !event.target.closest('button').type?.includes('submit')) form.dataset.answerDirty = 'true';
+  });
   let read;
   if (q.type === 'choice') {
     const options = q.options || [];
@@ -252,7 +260,14 @@ function activity() {
       if (!f.ok && f.solution) box.append(el('small', 'Accepted answer'), bidi(f.solution, 'p'));
       if (!f.ok && f.explanation?.en) box.append(el('p', f.explanation.en));
       if (!f.ok && f.explanation?.ml) box.append(bidi(f.explanation.ml, 'p'));
-      box.append(button('Continue →', () => state.run ? activity() : learner()));
+      box.append(button('Continue →', () => {
+        if (pendingControllerReload && !reloadedForController) {
+          reloadedForController = true;
+          window.location.reload();
+          return;
+        }
+        state.run ? activity() : learner();
+      }));
       main.replaceChildren(box);
     } catch (e) {
       notice(e.message);
@@ -263,4 +278,15 @@ function activity() {
   main.replaceChildren(el('h1', title), el('p', r.mode === 'placement' ? 'Question ' + (state.count + 1) + ' · up to 28' : 'Question ' + (r.done + 1) + ' of ' + r.total), bar, s);
 }
 boot().catch(e => notice(e.message));
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloadedForController) return;
+    if (document.querySelector('form[data-answer-form="true"][data-answer-dirty="true"]')) {
+      pendingControllerReload = true;
+      return;
+    }
+    reloadedForController = true;
+    window.location.reload();
+  });
+  navigator.serviceWorker.register('/sw.js').then(registration => registration.update()).catch(() => {});
+}
