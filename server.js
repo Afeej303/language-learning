@@ -30,7 +30,7 @@ const server=http.createServer(async(req,res)=>{
  return json(res,200,{ok:true});}
  const user=identity(token);if(!user)return json(res,401,{error:'Sign in to continue.'});
  if(path==='/api/logout'&&post){logout(token);res.setHeader('Set-Cookie',cookie('')+'; Max-Age=0');return json(res,200,{});}
- if(path==='/api/me'&&!post)return json(res,200,{user,syllabus});
+ if(path==='/api/me'&&!post)return json(res,200,{user,syllabus:syllabus.map(({examples,...lesson})=>lesson)});
  if(path.startsWith('/api/teacher/')){
  if(user.role!=='teacher')return json(res,403,{error:'Teacher access required.'});
  if(path==='/api/teacher/questions'&&!post)return json(res,200,bank(false));

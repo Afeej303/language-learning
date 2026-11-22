@@ -9,3 +9,4 @@
 - Limit fuzzy translation grading to one internal edit in one long word. Unlisted paraphrases can be rejected and a spelling tolerance can occasionally change meaning. Faculty can add accepted variants.
 - Vocabulary exercises encountered during learning enter a per-student SM-2-style queue. Binary correctness drives ease and intervals. Due times use elapsed days.
 - Teacher editing uses a validated JSON form so the student maintainer can inspect all five formats. Weak-point counts increase on errors and decrease on successful retrieval.
+- The PWA caches only its public shell. Sign-in, questions and progress require the LAN server. Malayalam and English appear side by side, with independent direction on Arabic stimuli and inputs.
