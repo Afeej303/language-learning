@@ -10,6 +10,9 @@ const files = [
   'public/ui.js',
   'public/teacher.js',
   'public/style.css',
+  'public/fonts/NotoNaskhArabic-Regular.ttf',
+  'public/fonts/NotoSansMalayalam-Regular.ttf',
+  'public/fonts/NotoSerifMalayalam-Regular.ttf',
   'public/app.webmanifest',
   'public/icon-192.png',
   'public/icon-512.png'

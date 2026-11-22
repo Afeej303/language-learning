@@ -24,7 +24,9 @@ const mime = {
   '.css': 'text/css',
   '.json': 'application/json',
   '.png': 'image/png',
-  '.webmanifest': 'application/manifest+json'
+  '.webmanifest': 'application/manifest+json',
+  '.ttf': 'font/ttf',
+  '.txt': 'text/plain; charset=utf-8'
 };
 const server = http.createServer(async (req, res) => {
   try {

@@ -1,5 +1,5 @@
 // Refresh this ID whenever any shell asset changes. `npm test` verifies it.
-const BUILD_ID = '15dffe5abdb59a6515078996bbde5731cd7c1b8912e06a4038974fc61613496c';
+const BUILD_ID = 'cd6d7792a23672dbc9a9883ea58a25426e6ee36d9c061fa48c7212c19a7bfaa1';
 const cacheName = `dhic-shell-${BUILD_ID}`;
 const shell = [
   '/',
@@ -8,6 +8,9 @@ const shell = [
   '/ui.js',
   '/teacher.js',
   '/style.css',
+  '/fonts/NotoNaskhArabic-Regular.ttf',
+  '/fonts/NotoSansMalayalam-Regular.ttf',
+  '/fonts/NotoSerifMalayalam-Regular.ttf',
   '/app.webmanifest',
   '/icon-192.png',
   '/icon-512.png'

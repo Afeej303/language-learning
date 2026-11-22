@@ -126,34 +126,27 @@ export async function teacher(main, syllabus) {
     item.append(accept);
     errorReview.append(item);
   }
-  const reports = section('Student progress', 'വിദ്യാർഥികളുടെ പുരോഗതി');
-  if (!students.length) reports.append(el('p', 'No student accounts yet.'));
+  const dashboard = section('Class dashboard', 'ക്ലാസ് പുരോഗതി');
+  const grammarRows = [];
+  if (!students.length) dashboard.append(el('p', 'No student accounts yet.'));
   for (const student of students) {
     const card = el('article');
     card.append(el('h3', student.name));
     if (student.lanes) {
       for (const [skill, lane] of Object.entries(student.lanes)) {
-        card.append(el('p', skill + ' · ' + lane.level + ' · ' + lane.passed.length + ' units passed'));
+        card.append(el('p', `${skill}: ${lane.level} · ${lane.passed.length} units passed`));
       }
-    } else card.append(el('p', 'Placement · ' + student.count + ' answered'));
-    const weak = Object.entries(student.weak).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
-    card.append(el('small', 'Weak points · ' + (weak.map(([p, n]) => p + ' × ' + n).join(', ') || 'None recorded')));
-    reports.append(card);
-  }
-  const dashboard = section('Class dashboard', 'ക്ലാസ് പുരോഗതി');
-  const grammarRows = [];
-  for (const student of students) {
-    const card = el('article');
-    card.append(el('h3', student.name));
-    const levels = student.lanes ? Object.entries(student.lanes).map(([skill, lane]) => `${skill}: ${lane.level}`).join(' · ') : 'Placement in progress';
-    card.append(el('p', 'Levels · ' + levels));
+    } else card.append(el('p', `Placement in progress · ${student.count} answered`));
     card.append(el('p', 'Last activity · ' + (student.lastActivity ? new Date(student.lastActivity).toLocaleString() : 'No answers yet')));
     const performance = student.performance || {};
-    const grammar = el('p');
-    grammar.append(document.createTextNode('Accuracy by skill and point · '));
-    const statsBySkill = Object.entries(performance).flatMap(([skill, points]) => Object.entries(points).map(([point, stat]) => `${skill} / ${point}: ${Math.round(stat.correct / stat.total * 100)}% (${stat.correct}/${stat.total})`));
-    grammar.append(document.createTextNode(statsBySkill.length ? statsBySkill.join(' · ') : 'No answers yet'));
-    card.append(grammar);
+    const skillNames = { reading: 'Reading', grammar: 'Grammar', vocabulary: 'Vocabulary', translation: 'Translation' };
+    for (const [skill, points] of Object.entries(performance)) {
+      const stats = Object.entries(points).map(([point, stat]) => `${point}: ${Math.round(stat.correct / stat.total * 100)}% (${stat.correct}/${stat.total})`);
+      if (stats.length) card.append(el('p', `${skillNames[skill] || skill} accuracy · ${stats.join(' · ')}`));
+    }
+    if (!Object.values(performance).some(points => Object.keys(points).length)) card.append(el('p', 'No answers yet.'));
+    const weak = Object.entries(student.weak || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+    card.append(el('small', 'Weak points · ' + (weak.map(([p, n]) => p + ' × ' + n).join(', ') || 'None recorded')));
     for (const [point, stat] of Object.entries(performance.grammar || {})) {
       const row = grammarRows.find(x => x.point === point) || { point, total: 0, correct: 0 };
       row.total += stat.total;
@@ -165,5 +158,5 @@ export async function teacher(main, syllabus) {
   const weakest = grammarRows.filter(x => x.total).sort((a,b) => a.correct/a.total - b.correct/b.total).slice(0, 5);
   dashboard.append(el('h3', 'Class weakest grammar points'));
   dashboard.append(el('p', weakest.length ? weakest.map(x => `${x.point} · ${Math.round(x.correct/x.total*100)}% (${x.correct}/${x.total})`).join(' · ') : 'No grammar activity yet.'));
-  main.replaceChildren(workshop, errorReview, reports, dashboard);
+  main.replaceChildren(workshop, errorReview, dashboard);
 }
