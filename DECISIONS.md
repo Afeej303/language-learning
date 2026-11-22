@@ -6,3 +6,4 @@
 - The sequence starts with decoding and then uses sentence-level vocabulary in context. CEFR mappings are local teaching estimates pending faculty validation.
 - Placement interleaves four skills, tests nearest available bands without repeating an item, checks stability at 20 and 24, and stops at 28. Each estimate is capped by the highest correct response in that skill.
 - Each skill has its own ordered units. Practice unlocks the checkpoint. A failed checkpoint requires correct review responses on the missed points. B1 completion records B2 as the next study band.
+- Limit fuzzy translation grading to one internal edit in one long word. Unlisted paraphrases can be rejected and a spelling tolerance can occasionally change meaning. Faculty can add accepted variants.
