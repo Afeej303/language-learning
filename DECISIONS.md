@@ -4,3 +4,4 @@
 - Provision accounts from the host. Teachers share the MVP administrative role. The authentication adapter owns password verification and opaque sessions so SSO can replace it.
 - Each grammar point starts with three worked examples and twelve exercises across four skills. A2 and B1 receive the same pilot coverage so placement and upgrades can run immediately after development approval.
 - The sequence starts with decoding and then uses sentence-level vocabulary in context. CEFR mappings are local teaching estimates pending faculty validation.
+- Placement interleaves four skills, tests nearest available bands without repeating an item, checks stability at 20 and 24, and stops at 28. Each estimate is capped by the highest correct response in that skill.
