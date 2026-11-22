@@ -8,3 +8,4 @@
 - Each skill has its own ordered units. Practice unlocks the checkpoint. A failed checkpoint requires correct review responses on the missed points. B1 completion records B2 as the next study band.
 - Limit fuzzy translation grading to one internal edit in one long word. Unlisted paraphrases can be rejected and a spelling tolerance can occasionally change meaning. Faculty can add accepted variants.
 - Vocabulary exercises encountered during learning enter a per-student SM-2-style queue. Binary correctness drives ease and intervals. Due times use elapsed days.
+- Teacher editing uses a validated JSON form so the student maintainer can inspect all five formats. Weak-point counts increase on errors and decrease on successful retrieval.
