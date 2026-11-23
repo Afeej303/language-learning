@@ -1,5 +1,5 @@
 // Refresh this ID whenever any shell asset changes. `npm test` verifies it.
-const BUILD_ID = 'cd6d7792a23672dbc9a9883ea58a25426e6ee36d9c061fa48c7212c19a7bfaa1';
+const BUILD_ID = '3d1af6e7ef30576694f432304b5213e59247a2a99ea510452f9ef4b41aee84df';
 const cacheName = `dhic-shell-${BUILD_ID}`;
 const shell = [
   '/',

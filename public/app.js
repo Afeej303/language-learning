@@ -45,7 +45,11 @@ function signin() {
       notice(e.message);
     }
   };
-  main.replaceChildren(hero('Arabic Studio', 'അറബി ഭാഷാപഠനം · Modern Standard Arabic'), form);
+  const welcome = hero('Arabic Studio', 'അറബി ഭാഷാപഠനം · Modern Standard Arabic');
+  welcome.classList.add('signin-hero');
+  const layout = el('div', undefined, 'signin-layout');
+  layout.append(welcome, form);
+  main.replaceChildren(layout);
 }
 async function boot() {
   let me;
@@ -77,12 +81,30 @@ async function start(mode, skill) {
   }
 }
 function learner() {
-  const content = [hero('Your learning path', 'പഠനപാത · ' + state.streak + ' day streak')];
+  const welcome = hero('Your learning path', 'പഠനപാത · ' + state.streak + ' day streak');
+  welcome.classList.add('path-hero');
+  const content = [welcome];
+  const overview = el('div', undefined, 'overview-strip');
+  const metric = (label, value, note, cls = '') => {
+    const item = el('div', undefined, `overview-metric ${cls}`.trim());
+    item.append(el('span', label, 'metric-label'), el('strong', value, 'metric-value'));
+    if (note) item.append(el('small', note, 'metric-note'));
+    return item;
+  };
+  overview.append(metric('Daily streak', `${state.streak} ${state.streak === 1 ? 'day' : 'days'}`, 'Keep your study habit going', 'metric-streak'));
+  overview.append(metric('Vocabulary due', String(state.due), state.due ? 'Ready for review' : 'Nothing due today', 'metric-due'));
+  if (state.lanes) {
+    for (const [skill, lane] of Object.entries(state.lanes)) {
+      overview.append(metric(`${skill[0].toUpperCase()}${skill.slice(1)} level`, lane.level, names[skill], 'metric-level'));
+    }
+  }
+  content.push(overview);
   if (state.run) {
     const r=state.run;
     const activityName=r.mode==='placement'?'placement':`${r.mode}${r.skill ? ' · '+r.skill : ''}`;
-    const resume=section('Open activity','തുടരാനുള്ള പ്രവർത്തനം');
-    resume.append(el('p',`You have an unfinished ${activityName} · question ${r.current} of ${r.mode==='placement'?'up to ':''}${r.total}.`),button(`Resume ${activityName} · question ${r.current} of ${r.total}`,activity));
+    const resume=section('Continue where you left off','തുടരാനുള്ള പ്രവർത്തനം');
+    resume.classList.add('resume-panel');
+    resume.append(el('p',`Your ${activityName} is still open at question ${r.current} of ${r.mode==='placement'?'up to ':''}${r.total}.`),button(`Resume ${activityName} · question ${r.current} of ${r.total}`,activity));
     content.push(resume);
   }
   if (state.last) {
@@ -91,15 +113,19 @@ function learner() {
   }
   if (!state.lanes) {
     const card = section('Find your starting point', 'നിങ്ങളുടെ നിലവാരം കണ്ടെത്തുക');
+    card.classList.add('placement-panel');
     card.append(el('p', 'Answer 20–28 questions. Reading, grammar, vocabulary and translation each get their own starting level.'), button(state.count ? 'Resume placement' : 'Start placement', () => start('placement')));
     content.push(card);
   } else {
-    const grid = el('div', undefined, 'grid');
+    const pathLayout = el('div', undefined, 'learning-layout');
+    const pathMain = el('div', undefined, 'curriculum-main');
+    const grid = el('div', undefined, 'skill-grid');
     for (const [skill, l] of Object.entries(state.lanes)) {
       const topics = syllabus.filter(p => p.level === l.level),
         units = [...new Set(topics.map(p => p.unit))],
         unit = units.find(u => !l.passed.includes(u));
       const card = section(skill[0].toUpperCase() + skill.slice(1), names[skill]);
+      card.classList.add('skill-lane', `skill-${skill}`);
       card.prepend(el('strong', l.level, 'band'));
       if (unit) {
         const complete = units.filter(u => l.passed.includes(u)).length;
@@ -107,12 +133,19 @@ function learner() {
         bar.value = complete;
         bar.max = units.length;
         bar.setAttribute('aria-label', skill + ' unit progress');
-        card.append(bar, el('small', complete + ' / ' + units.length + ' units · ' + unit));
+        const progressHeader = el('div', undefined, 'unit-progress-header');
+        progressHeader.append(el('small', `${complete} of ${units.length} units complete`, 'progress-copy'), el('span', unit, 'current-unit'));
+        card.append(bar, progressHeader);
         for (const p of topics.filter(p => p.unit === unit && (!l.review.length || l.review.includes(p.point)))) {
           const d = el('details');
+          d.className = 'lesson-disclosure';
           if (l.review.length) d.open = true;
           d.append(el('summary', p.title), el('p', p.lesson), el('p', p.lessonMl, 'ml'));
-          if (p.worked) d.append(bidi(p.worked, 'p'));
+          if (p.worked) {
+            const worked = el('div', undefined, 'worked-example');
+            worked.append(el('small', 'Worked example'), bidi(p.worked, 'p'));
+            d.append(worked);
+          }
           card.append(d);
         }
         const mode = l.review.length ? 'review' : l.practised === unit ? 'checkpoint' : 'practice';
@@ -120,15 +153,35 @@ function learner() {
           review: 'Start targeted review',
           checkpoint: 'Take checkpoint',
           practice: 'Start practice'
-        }[mode], () => start(mode, skill)));
-      } else card.append(el('p', 'A1–B1 path completed.'));
+        }[mode], () => start(mode, skill), 'lane-action'));
+      } else card.append(el('p', 'A1–B1 path completed.', 'path-complete'));
       grid.append(card);
     }
-    content.push(grid);
+    const bandHeading = el('div', undefined, 'section-heading');
+    bandHeading.append(el('p', 'Your curriculum', 'eyebrow'), el('h2', 'Learning by skill'), el('p', 'Each skill keeps its own level and progress.', 'section-intro'));
+    pathMain.append(bandHeading, grid);
+    const aside = el('aside', undefined, 'learning-aside');
     const vocab = section('Vocabulary review', 'പദാവർത്തനം');
-    vocab.append(el('p', state.due + ' expressions due today'));
+    vocab.classList.add('aside-panel', 'vocab-panel');
+    vocab.append(el('strong', `${state.due} expressions due`, 'aside-count'));
     if (state.due) vocab.append(button('Review due vocabulary', () => start('vocab')));
-    content.push(vocab);
+    else vocab.append(el('p', 'New words will appear here when they are due.'));
+    aside.append(vocab);
+    const weakRows = Object.entries(state.weak || {}).filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const diagnostic = section('Topics to revisit', 'വീണ്ടും പരിശീലിക്കാവുന്ന വിഷയങ്ങൾ');
+    diagnostic.classList.add('aside-panel', 'diagnostic-panel');
+    if (weakRows.length) {
+      const list = el('ul', undefined, 'weak-list');
+      weakRows.forEach(([point, count]) => {
+        const row = el('li');
+        row.append(el('span', point), el('strong', `${count} ${count === 1 ? 'miss' : 'misses'}`));
+        list.append(row);
+      });
+      diagnostic.append(list);
+    } else diagnostic.append(el('p', 'No topics need extra review right now.'));
+    aside.append(diagnostic);
+    pathLayout.append(pathMain, aside);
+    content.push(pathLayout);
   }
   main.replaceChildren(...content);
 }
@@ -137,20 +190,32 @@ function activity() {
     q = r.q;
   if (!q) {
     const s = section('Question withdrawn', 'ചോദ്യം പിൻവലിച്ചു');
+    s.classList.add('withdrawn-panel');
     s.append(button('Exit to home', learner, 'quiet'), button('Refresh activity', () => start(r.mode, r.skill)));
     return main.replaceChildren(s);
   }
   const title = r.mode === 'placement' ? 'Placement test' : r.mode[0].toUpperCase() + r.mode.slice(1);
-  const s = section(q.prompt, q.ml),
-    bar = el('progress');
-  const exit=button('Exit to home',learner,'quiet');
-  exit.type='button';
-  s.append(exit);
+  const lesson = syllabus.find(p => p.point === q.point);
+  const workspace = el('div', undefined, 'practice-workspace');
+  const exerciseColumn = el('div', undefined, 'exercise-column');
+  const contextColumn = el('aside', undefined, 'exercise-context');
+  const activityHeader = el('div', undefined, 'activity-header');
+  const titleBlock = el('div', undefined, 'activity-title-block');
+  titleBlock.append(el('p', `${q.level} · ${q.skill}`, 'eyebrow'), el('h1', title), el('p', q.point));
+  const progressBlock = el('div', undefined, 'activity-progress');
+  progressBlock.append(el('span', `Question ${r.mode === 'placement' ? state.count + 1 : r.done + 1} of ${r.total}`, 'progress-label'));
+  const bar = el('progress');
   bar.value = r.mode === 'placement' ? state.count : r.done;
   bar.max = r.mode === 'placement' ? 28 : r.total;
   bar.setAttribute('aria-label', 'Activity progress');
-  s.prepend(el('small', q.skill.toUpperCase() + '  /  ' + q.level, 'eyebrow'));
+  progressBlock.append(bar);
+  const exit = button('Exit to home', learner, 'quiet activity-exit');
+  exit.type = 'button';
+  activityHeader.append(titleBlock, progressBlock, exit);
+  const s = section(q.prompt, q.ml);
+  s.classList.add('exercise-card');
   s.append(bidi(q.cue, 'blockquote'));
+  const answerArea = el('div', undefined, 'answer-area');
   const form = el('form');
   form.dataset.answerForm = 'true';
   form.addEventListener('input', () => { form.dataset.answerDirty = 'true'; });
@@ -179,7 +244,7 @@ function activity() {
       label.append(input, marker, bidi(opt, 'span'));
       grid.append(label);
     });
-    form.append(grid);
+    answerArea.append(grid);
     form.addEventListener('keydown', event => {
       if (!/^[1-5]$/.test(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
       const field = event.target;
@@ -203,7 +268,7 @@ function activity() {
       for (const x of q.right) select.append(Object.assign(el('option', x), {
         value: x
       }));
-      form.append(field(left, select));
+      answerArea.append(field(left, select));
       return select;
     });
     read = () => selects.map(x => x.value);
@@ -227,7 +292,7 @@ function activity() {
       buttons.push(b);
       tokens.append(b);
     });
-    form.append(line, tokens, button('Undo last word', () => {
+    answerArea.append(line, tokens, button('Undo last word', () => {
       indices.pop();
       render();
     }, 'quiet'));
@@ -241,11 +306,13 @@ function activity() {
     input.dir = 'auto';
     input.maxLength = 1000;
     input.autocomplete = 'off';
-    form.append(field('Your answer · ഉത്തരം', input));
+    answerArea.append(field('Your answer · ഉത്തരം', input));
     read = () => input.value;
   }
   const submit = el('button', 'Submit answer');
-  form.append(submit);
+  submit.classList.add('answer-submit');
+  answerArea.append(submit);
+  form.append(answerArea);
   form.onsubmit = async e => {
     e.preventDefault();
     submit.disabled = true;
@@ -257,6 +324,7 @@ function activity() {
       notice('');
       const f = state.feedback;
       const box = section(f.ok ? 'Correct' : 'Answer recorded', f.ok ? 'ശരിയാണ്' : 'ഉത്തരം രേഖപ്പെടുത്തി');
+      box.classList.add('answer-feedback', f.ok ? 'feedback-correct' : 'feedback-wrong');
       if (!f.ok && f.solution) box.append(el('small', 'Accepted answer'), bidi(f.solution, 'p'));
       if (!f.ok && f.explanation?.en) box.append(el('p', f.explanation.en));
       if (!f.ok && f.explanation?.ml) box.append(bidi(f.explanation.ml, 'p'));
@@ -275,7 +343,20 @@ function activity() {
     }
   };
   s.append(form);
-  main.replaceChildren(el('h1', title), el('p', r.mode === 'placement' ? 'Question ' + (state.count + 1) + ' · up to 28' : 'Question ' + (r.done + 1) + ' of ' + r.total), bar, s);
+  exerciseColumn.append(activityHeader, s);
+  if (lesson) {
+    const rule = section('Grammar rule', 'വ്യാകരണ നിയമം');
+    rule.classList.add('context-rule');
+    if (lesson.worked) rule.append(bidi(lesson.worked, 'blockquote'));
+    rule.append(el('p', lesson.lesson), el('p', lesson.lessonMl, 'ml'));
+    contextColumn.append(rule);
+  }
+  const contextMeta = section('Practice details', 'പരിശീലന വിവരങ്ങൾ');
+  contextMeta.classList.add('context-meta');
+  contextMeta.append(el('p', `Activity · ${title}`), el('p', `Skill · ${q.skill}`), el('p', `CEFR band · ${q.level}`));
+  contextColumn.append(contextMeta);
+  workspace.append(exerciseColumn, contextColumn);
+  main.replaceChildren(workspace);
 }
 boot().catch(e => notice(e.message));
 if ('serviceWorker' in navigator) {

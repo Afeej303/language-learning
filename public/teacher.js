@@ -17,7 +17,8 @@ const area = () => Object.assign(el('textarea'), {
 export async function teacher(main, syllabus) {
   const [bank, students, wrongAnswers] = await Promise.all([api('teacher/questions'), api('teacher/students'), api('teacher/wrong-answers')]);
   const workshop = section('Question workshop', 'ചോദ്യശേഖരം');
-  const tools = el('div');
+  workshop.classList.add('question-workshop');
+  const tools = el('div', undefined, 'bank-tools');
   for (const [label, url] of [['Download CSV template','teacher/questions/template'],['Export full question bank','teacher/questions/export']]) {
     const link=el('a',label); link.href='/api/'+url; link.download=''; tools.append(link,el('span',' · '));
   }
@@ -110,6 +111,7 @@ export async function teacher(main, syllabus) {
   };
   workshop.append(tools,form);
   const errorReview = section('Common wrong answers', 'പതിവായി തെറ്റുന്ന ഉത്തരങ്ങൾ');
+  errorReview.classList.add('wrong-answer-panel');
   if (!wrongAnswers.length) errorReview.append(el('p', 'No wrong answers recorded yet.'));
   for (const row of wrongAnswers) {
     const item = el('article');
@@ -127,6 +129,7 @@ export async function teacher(main, syllabus) {
     errorReview.append(item);
   }
   const dashboard = section('Class dashboard', 'ക്ലാസ് പുരോഗതി');
+  dashboard.classList.add('class-dashboard');
   const grammarRows = [];
   if (!students.length) dashboard.append(el('p', 'No student accounts yet.'));
   for (const student of students) {
@@ -158,5 +161,7 @@ export async function teacher(main, syllabus) {
   const weakest = grammarRows.filter(x => x.total).sort((a,b) => a.correct/a.total - b.correct/b.total).slice(0, 5);
   dashboard.append(el('h3', 'Class weakest grammar points'));
   dashboard.append(el('p', weakest.length ? weakest.map(x => `${x.point} · ${Math.round(x.correct/x.total*100)}% (${x.correct}/${x.total})`).join(' · ') : 'No grammar activity yet.'));
-  main.replaceChildren(workshop, errorReview, dashboard);
+  const workspace = el('div', undefined, 'teacher-workspace');
+  workspace.append(workshop, errorReview, dashboard);
+  main.replaceChildren(workspace);
 }
